@@ -13,6 +13,9 @@
   - `RS2_OPTION_ACCEL_SENSITIVITY` - added to `rs2_option`, accelerometer sensitivity (dynamic range) level; values in the new `rs2_accel_sensitivity` enum (3G / 6G / 12G / 24G full-scale range), with `rs2_accel_sensitivity_to_string`. Selects the saturation point only, the reported unit scale is unchanged.
   - `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` - added to `rs2_option`, Off (0) = depth-only labeling, On (1) = the occupancy grid uses the segmentation mode and classes (pre-stream only).
   - `RS2_OPTION_LPCL_SEGMENTATION` - added to `rs2_option`, Off (0) = depth-only labeling, On (1) = the labeled point cloud uses the segmentation mode and classes (pre-stream only).
+- Changed APIs
+  - `rs2_hdrd_control::threshold_mode` - documented default changed from 0 (Zero range) to 1 (MinZ range, computed by the firmware). Values are still 0 = Zero range, 1 = MinZ range, 2 = Manual.
+  - `rs2::save_to_ply` - a device point cloud (`RS2_STREAM_POINT_CLOUD`) has no texture coordinates, so it is exported without texture coordinates or color even when a color frame is given.
 <!-- /wikigen:upcoming -->
 
 ## Version [2.59.1](https://github.com/realsenseai/librealsense/releases/tag/v2.59.1) beta
