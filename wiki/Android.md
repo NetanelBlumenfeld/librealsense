@@ -16,7 +16,7 @@ How it works:
 - **Device access.** The native library does not open USB devices by itself. The Java side asks Android for USB permission, opens the device with `UsbManager.openDevice()` and hands the file descriptor to native code (see [USB permissions and device discovery](#usb-permissions-and-device-discovery)). Because of this, every app, including a purely native one, must call `RsContext.init()` from Java.
 - **Java API.** The Java classes wrap the C API through JNI and load the native library with `System.loadLibrary("realsense2")` ([`LrsClass.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/LrsClass.java)).
 
-The repository guide ([`doc/android.md`](https://github.com/realsenseai/librealsense/blob/development/doc/android.md)) says the SDK has not been explicitly validated on Android but is expected to work, and that calibration and firmware update tools for production use are not available on Android. You need an Android device that supports USB OTG and a USB 3 OTG cable.
+The repository guide ([`doc/android.md`](https://github.com/realsenseai/librealsense/blob/development/doc/android.md)) says the SDK has not been explicitly validated on Android but is expected to work, and that calibration and firmware update tools for production use are not available on Android. You need an Android device that supports USB OTG and a USB 3 OTG cable (according to doc/android.md).
 
 ![RealSense app running on Android](https://raw.githubusercontent.com/realsenseai/librealsense/development/doc/img/realsense-android.png)
 
@@ -192,18 +192,18 @@ The AAR handles USB permissions for you. The parts are:
    | `0x003E7` |
 
    There are no product ID entries, so Android offers your app for any device of these vendors.
-2. **Runtime request.** When `RsContext.init()` runs, and again on each `USB_DEVICE_ATTACHED` broadcast, the internal `Enumerator` calls `UsbUtilities.grantUsbPermissionIfNeeded()` ([`UsbUtilities.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/UsbUtilities.java)). This finds every attached USB device with vendor ID `0x8086` that the app has no permission for yet, and calls `UsbManager.requestPermission()` with a broadcast intent named `USB_CONTROL_PERMISSION`. Android then shows its USB permission dialog.
-3. **Opening the device.** When the user grants permission, or a device is attached or detached, the internal `DeviceWatcher` ([`DeviceWatcher.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/DeviceWatcher.java)) lists the attached devices with vendor ID `0x8086`. It opens new ones with `UsbManager.openDevice()` and passes the device name and file descriptor to native code (`nAddUsbDevice`). It removes devices that are gone. Then it calls `onDeviceAttach()` or `onDeviceDetach()` on every `DeviceListener` registered through `RsContext.setDevicesChangedCallback()`.
+2. **Runtime request.** When `RsContext.init()` runs, and again on each `USB_DEVICE_ATTACHED` or `USB_CONTROL_PERMISSION` broadcast, the internal `Enumerator` calls `UsbUtilities.grantUsbPermissionIfNeeded()` ([`UsbUtilities.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/UsbUtilities.java)). This finds every attached USB device with vendor ID `0x8086` that the app has no permission for yet, and calls `UsbManager.requestPermission()` with a broadcast intent named `USB_CONTROL_PERMISSION`. Android then shows its USB permission dialog.
+3. **Opening the device.** When `RsContext.init()` runs, when the user answers the permission dialog, or when a device is attached or detached, the internal `DeviceWatcher` ([`DeviceWatcher.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/DeviceWatcher.java)) lists the attached devices with vendor ID `0x8086`. It opens new ones with `UsbManager.openDevice()` and passes the device name and file descriptor to native code (`nAddUsbDevice`). It removes devices that are gone. For each device added or removed, it calls `onDeviceAttach()` or `onDeviceDetach()` on every `DeviceListener` registered through `RsContext.setDevicesChangedCallback()`.
 
 Only devices with vendor ID `0x8086` are asked for permission and handed to the library. The other two IDs in `usb_filter.xml` only affect the attach intent.
 
-On Android 13 (`TIRAMISU`) and later, the receivers are registered with `Context.RECEIVER_NOT_EXPORTED` ([`Enumerator.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Enumerator.java)).
+On Android 13 (`TIRAMISU`) and later, all three receivers are registered with `Context.RECEIVER_NOT_EXPORTED`. On older versions, only the `USB_CONTROL_PERMISSION` receiver is registered as not exported (through `ContextCompat`) ([`Enumerator.java`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/librealsense/src/main/java/com/intel/realsense/librealsense/Enumerator.java)).
 
 ## Native (C/C++) apps
 
 ### Calling the C++ API from an Android app
 
-A native app links the same `librealsense2.so` that is inside the AAR, and uses the normal headers from [`include/librealsense2`](https://github.com/realsenseai/librealsense/tree/development/include/librealsense2). Java code is still required, because only the Java side opens USB devices. Call `RsContext.init()` and register a `DeviceListener` exactly as in a Java app, then call into your JNI code. [`native_example`](https://github.com/realsenseai/librealsense/tree/development/wrappers/android/examples/native_example) does this. Its C++ side ([`native-lib.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/examples/native_example/app/src/main/cpp/native-lib.cpp)) is:
+A native app links the same `librealsense2.so` that is inside the AAR, and uses the normal headers from [`include/librealsense2`](https://github.com/realsenseai/librealsense/tree/development/include/librealsense2). Java code is still required, because only the Java side opens USB devices. Call `RsContext.init()` and register a `DeviceListener` exactly as in a Java app, then call into your JNI code. [`native_example`](https://github.com/realsenseai/librealsense/tree/development/wrappers/android/examples/native_example) does this. Its C++ side ([`native-lib.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/android/examples/native_example/app/src/main/cpp/native-lib.cpp)) counts the cameras like this (it also returns `RS2_API_VERSION_STR` from a second function):
 
 ```cpp
 #include <jni.h>
@@ -262,12 +262,14 @@ All public classes are in [`com.intel.realsense.librealsense`](https://github.co
 
 | Area | Classes |
 |---|---|
-| Context and devices | `RsContext`, `DeviceListener`, `DeviceList`, `Device`, `UpdateDevice`, `Updatable`, `ProductLine`, `CameraInfo`, `DebugProtocol` |
+| Context and devices | `RsContext`, `DeviceListener`, `DeviceCallback`, `DeviceList`, `Device`, `UpdateDevice`, `Updatable`, `ProgressListener`, `ProductLine`, `CameraInfo`, `DebugProtocol` |
+| Geometry | `Utils` (projection, deprojection, point transform, field of view), `Pixel`, `Point_3D` |
+| USB plumbing | `UsbUtilities`, `DeviceWatcherActivity` |
 | Sensors and options | `Sensor`, `DepthSensor`, `ColorSensor`, `RoiSensor`, `RegionOfInterest`, `Options`, `OptionsInterface`, `Option` |
 | Streams | `StreamProfile`, `VideoStreamProfile`, `MotionStreamProfile`, `StreamType`, `StreamFormat`, `Intrinsic`, `MotionIntrinsic`, `Extrinsic`, `DistortionType` |
 | Pipeline | `Pipeline`, `PipelineProfile`, `Config` |
 | Frames | `Frame`, `FrameSet`, `VideoFrame`, `DepthFrame`, `MotionFrame`, `Points`, `FrameMetadata`, `FrameCallback`, `FrameQueue`, `FrameReleaser`, `TimestampDomain`, `Extension` |
-| Processing | `Align`, `Colorizer`, `Pointcloud`, `DecimationFilter`, `ThresholdFilter`, `SpatialFilter`, `TemporalFilter`, `HoleFillingFilter`, `DisparityTransformFilter`, `HdrMerge`, `SequenceIdFilter`, `ZeroOrderInvalidationFilter`, `YuyDecoder`, `ProcessingBlock`, `Filter` |
+| Processing | `Align`, `Colorizer`, `Pointcloud`, `DecimationFilter`, `ThresholdFilter`, `SpatialFilter`, `TemporalFilter`, `HoleFillingFilter`, `DisparityTransformFilter`, `HdrMerge`, `SequenceIdFilter`, `ZeroOrderInvalidationFilter`, `YuyDecoder`, `ProcessingBlock`, `Filter`, `ProcessingBlockInterface`, `FilterInterface` |
 | Rendering | `GLRsSurfaceView`, `GLRenderer`, `GLFrame`, `GLVideoFrame`, `GLPointsFrame`, `GLMotionFrame` |
 | Firmware logs | `FwLogger`, `FwLogMsg`, `FwLogParsedMsg` |
 
