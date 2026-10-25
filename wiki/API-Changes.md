@@ -1,3 +1,23 @@
+<!-- wikigen:upcoming -->
+## Upcoming release (draft)
+
+- New APIs
+  - `rs2_create_mjpeg_decoder` - Create a processing block that decodes MJPEG frames to RGB8, with C++ `rs2::mjpeg_decoder`.
+  - `rs2_get_depth_mapping_params` / `rs2_set_depth_mapping_params` - Get or set the occupancy grid and labeled point cloud parameters of a depth mapping sensor as a JSON string. Setting changes only the named fields and blocks until the device has applied them. C++ `get_depth_mapping_params()` / `set_depth_mapping_params()` in `rs_sensor.hpp`.
+  - `RS2_STREAM_POINT_CLOUD` - added to `rs2_stream`, device-generated point cloud stream (D5xx EP12 Mapping).
+  - `RS2_OPTION_PASSIVE_DEPTH_MODE` - added to `rs2_option`, selects which exposure classes produce depth; values in the new `rs2_passive_depth_mode` enum (Disabled / Alternating / Full).
+  - `RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE` - added to `rs2_option`, D585 2C: enable or disable auto-exposure of the RGB cameras.
+  - `RS2_OPTION_DUAL_RGB_EXPOSURE` - added to `rs2_option`, D585 2C: RGB exposure time. Setting any value disables RGB auto-exposure.
+  - `RS2_OPTION_DUAL_RGB_GAIN` - added to `rs2_option`, D585 2C: RGB gain. Setting any value disables RGB auto-exposure.
+  - `RS2_OPTION_ACCEL_SENSITIVITY` - added to `rs2_option`, accelerometer dynamic range; values in the new `rs2_accel_sensitivity` enum (3G / 6G / 12G / 24G).
+  - `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` - added to `rs2_option`, occupancy grid uses the segmentation mode and classes when On (pre-stream only).
+  - `RS2_OPTION_LPCL_SEGMENTATION` - added to `rs2_option`, labeled point cloud uses the segmentation mode and classes when On (pre-stream only).
+  - `RS2_FRAME_METADATA_OCCUPANCY_GRID_ORIGIN_X` / `RS2_FRAME_METADATA_OCCUPANCY_GRID_ORIGIN_Y` - added to `rs2_frame_metadata_value`, occupancy grid origin on the forward and lateral axes, in millimeters.
+- Changed APIs
+  - `rs2_get_frame_texture_coordinates` - returns `nullptr` for a device point cloud (`RS2_STREAM_POINT_CLOUD`), which carries vertices only. The same applies to C++ `rs2::points::get_texture_coordinates()`.
+  - `rs2_hdrd_control` - documented default of `threshold_mode` is now 1 (MinZ range).
+<!-- /wikigen:upcoming -->
+
 ## Version [2.59.1](https://github.com/realsenseai/librealsense/releases/tag/v2.59.1) beta
 
 - New APIs
