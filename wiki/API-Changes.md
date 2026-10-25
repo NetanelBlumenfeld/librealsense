@@ -1,3 +1,20 @@
+<!-- wikigen:upcoming -->
+## Upcoming release (draft)
+
+- New APIs
+  - `rs2_get_depth_mapping_params` / `rs2_set_depth_mapping_params` - Get / set the occupancy grid and labeled point cloud params of a depth mapping sensor as a JSON string. Get returns a `rs2_raw_data_buffer` (release with `rs2_delete_raw_data`); set changes only the named fields, blocks until the device has applied the params and fails with the device's message if it rejects them. C++ `rs2::depth_mapping_sensor::get_depth_mapping_params()` / `set_depth_mapping_params()`.
+  - `rs2_create_mjpeg_decoder` - Creates an MJPEG decoder processing block: accepts compressed MJPEG frames and outputs RGB8 frames. C++ `rs2::mjpeg_decoder`.
+  - `RS2_STREAM_POINT_CLOUD` - added to `rs2_stream`, device-generated point cloud stream. Its frames carry vertices only: `rs2_get_frame_texture_coordinates` / `rs2::points::get_texture_coordinates()` return nullptr for it.
+  - `RS2_FRAME_METADATA_OCCUPANCY_GRID_ORIGIN_X` / `RS2_FRAME_METADATA_OCCUPANCY_GRID_ORIGIN_Y` - added to `rs2_frame_metadata_value`, occupancy-grid origin on the forward / lateral axis, in millimeters.
+  - `RS2_OPTION_PASSIVE_DEPTH_MODE` - added to `rs2_option`, D585 2C: which exposure classes produce depth (pre-stream only); values in the new `rs2_passive_depth_mode` enum (Disabled = laser on, active depth only / Alternating = laser alternates per frame, active and passive depth both delivered / Full = laser forced off, passive depth only), with `rs2_passive_depth_mode_to_string`.
+  - `RS2_OPTION_DUAL_RGB_ENABLE_AUTO_EXPOSURE` - added to `rs2_option`, D585 2C: enable / disable auto-exposure of the RGB cameras, independent of the depth auto-exposure.
+  - `RS2_OPTION_DUAL_RGB_EXPOSURE` - added to `rs2_option`, D585 2C: RGB exposure time in 100 microsecond units. Setting any value disables RGB auto-exposure.
+  - `RS2_OPTION_DUAL_RGB_GAIN` - added to `rs2_option`, D585 2C: RGB gain. Setting any value disables RGB auto-exposure.
+  - `RS2_OPTION_ACCEL_SENSITIVITY` - added to `rs2_option`, accelerometer sensitivity (dynamic range) level; values in the new `rs2_accel_sensitivity` enum (3G / 6G / 12G / 24G full-scale range), with `rs2_accel_sensitivity_to_string`. Selects the saturation point only, the reported unit scale is unchanged.
+  - `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` - added to `rs2_option`, Off (0) = depth-only labeling, On (1) = the occupancy grid uses the segmentation mode and classes (pre-stream only).
+  - `RS2_OPTION_LPCL_SEGMENTATION` - added to `rs2_option`, Off (0) = depth-only labeling, On (1) = the labeled point cloud uses the segmentation mode and classes (pre-stream only).
+<!-- /wikigen:upcoming -->
+
 ## Version [2.59.1](https://github.com/realsenseai/librealsense/releases/tag/v2.59.1) beta
 
 - New APIs
