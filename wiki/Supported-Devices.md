@@ -69,7 +69,7 @@ A camera in recovery (DFU) mode shows up as a firmware-update device. Its name a
 
 ### Limit enumeration to a product line
 
-`rs2::context::query_devices()` takes a product-line mask from [`include/librealsense2/h/rs_context.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_context.h), for example `RS2_PRODUCT_LINE_D400`, `RS2_PRODUCT_LINE_D500` or `RS2_PRODUCT_LINE_ANY`. [`src/backend-device-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/backend-device-factory.cpp) only picks D400 devices when the mask includes `RS2_PRODUCT_LINE_D400`, and D500 devices when it includes `RS2_PRODUCT_LINE_D500`. Recovery devices are matched to the D400 or D500 line by their PID.
+`rs2::context::query_devices()` takes a product-line mask from [`include/librealsense2/h/rs_context.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_context.h), for example `RS2_PRODUCT_LINE_D400`, `RS2_PRODUCT_LINE_D500` or `RS2_PRODUCT_LINE_ANY`. [`src/backend-device-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/backend-device-factory.cpp) only picks D400 devices when the mask includes `RS2_PRODUCT_LINE_D400`, and D500 devices when it includes `RS2_PRODUCT_LINE_D500`. USB recovery devices are matched to the D400 or D500 line by their PID. MIPI recovery devices are not filtered by the product line.
 
 ## How the SDK decides which cameras it supports
 
@@ -117,8 +117,8 @@ All PIDs, names and factory cases below are the same at v2.59.1.
 | RealSense D420 | 0x0AF6 | D400 | No | `rs420_device` |
 | RealSense D421 | 0x1155 | D400 | No | `rs421_device` |
 | RealSense D420 with Tracking Module | 0x0AFE | D400 | Tracking module | `rs420_mm_device` |
-| RealSense D410 with Tracking Module | 0x0AFF | D400 | Tracking module | In `rs400_sku_pid` but no case in `create_device()`; partial device fallback |
-| RealSense D400 with Tracking Module | 0x0B00 | D400 | Tracking module | In `rs400_sku_pid` but no case in `create_device()`; partial device fallback |
+| RealSense D410 with Tracking Module | 0x0AFF | D400 | No | In `rs400_sku_pid` and `d400_fisheye_pid`, but no case in `create_device()`; partial device fallback (`rs400_device`, no motion module) |
+| RealSense D400 with Tracking Module | 0x0B00 | D400 | No | In `rs400_sku_pid` and `d400_fisheye_pid`, but no case in `create_device()`; partial device fallback (`rs400_device`, no motion module) |
 | RealSense D430 with Tracking and RGB Modules | 0x0B01 | D400 | Tracking module | `rs430_rgb_mm_device` |
 | RealSense D460 | 0x0B03 | D400 | No | `rs410_device` |
 | RealSense D435 | 0x0B07 | D400 | No | `rs435_device` |
@@ -178,7 +178,7 @@ The IMU chip is read from the device and reported in `RS2_CAMERA_INFO_IMU_TYPE` 
 
 ### Coordinate system
 
-IMU samples are rotated into the depth sensor's coordinate system before the SDK delivers them. Every motion frame goes through `motion_transform`, which multiplies it by `imu_to_depth_alignment()` from the calibration handler ([`src/proc/motion-transform.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/proc/motion-transform.cpp)). The depth-to-IMU extrinsics are registered for the accel and gyro streams, and both share the same extrinsics ([`src/ds/ds-motion-common.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/ds-motion-common.cpp)). See [[Projection in RealSense SDK 2.0]] for the axis convention.
+On USB and MIPI connections, IMU samples are rotated into the depth sensor's coordinate system before the SDK delivers them. Each accel and gyro frame goes through `motion_transform`, which multiplies it by `imu_to_depth_alignment()` from the calibration handler ([`src/proc/motion-transform.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/proc/motion-transform.cpp)). Over Ethernet (DDS), the combined motion stream is passed on unchanged. The depth-to-IMU extrinsics are registered for the accel and gyro streams, and both share the same extrinsics ([`src/ds/ds-motion-common.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/ds-motion-common.cpp)). See [[Projection in RealSense SDK 2.0]] for the axis convention.
 
 ![D400 depth sensor coordinate system](https://raw.githubusercontent.com/realsenseai/librealsense/development/doc/img/LRS_CS_axis_base.png)
 ### IMU calibration
@@ -189,13 +189,13 @@ When the motion module starts, the SDK reads the IMU calibration table from the 
 - If the table has no valid intrinsics, default intrinsics are used.
 - If it has no valid extrinsics, the extrinsics come from mechanical CAD values (logged as `IMU extrinsic table not found; using CAD values`).
 
-When calibration is available, the motion sensor exposes `RS2_OPTION_ENABLE_MOTION_CORRECTION`, which applies the stored intrinsics (sensitivity and bias) to the samples.
+On USB and MIPI connections, the motion sensor exposes `RS2_OPTION_ENABLE_MOTION_CORRECTION` (on by default), which applies the intrinsics (sensitivity and bias) to the samples: the stored ones, or the defaults (scale 1, bias 0) when the table has none.
 
 To calibrate the IMU and write the result to the camera, use [`tools/rs-imu-calibration/rs-imu-calibration.py`](https://github.com/realsenseai/librealsense/blob/development/tools/rs-imu-calibration/rs-imu-calibration.py). See [[Calibration]].
 
 ### Reading IMU data
 
-Accel and gyro are ordinary streams (`RS2_STREAM_ACCEL`, `RS2_STREAM_GYRO`). Enable them on an `rs2::config` and read `rs2::motion_frame::get_motion_data()`. These programs work with IMU streams:
+Accel and gyro are ordinary streams (`RS2_STREAM_ACCEL`, `RS2_STREAM_GYRO`); Ethernet (DDS) devices instead give one `RS2_STREAM_MOTION` stream in `RS2_FORMAT_COMBINED_MOTION`. Enable them on an `rs2::config` and read `rs2::motion_frame::get_motion_data()` for accel and gyro, or `rs2::motion_frame::get_combined_motion_data()` for the combined motion stream. These programs work with IMU streams:
 
 - [`examples/motion`](https://github.com/realsenseai/librealsense/tree/development/examples/motion) (`rs-motion`) is a complete example.
 - [`rs-enumerate-devices`](https://github.com/realsenseai/librealsense/tree/development/tools/enumerate-devices) lists the motion stream profiles.
