@@ -10,7 +10,7 @@ if(APPLE)
 endif()
 ```
 
-`FORCE_RSUSB_BACKEND` then selects the `RS2_USE_LIBUVC_BACKEND` compile definition. This builds the shared RS USB, UVC and HID sources ([`src/rsusb-backend/`](https://github.com/realsenseai/librealsense/tree/development/src/rsusb-backend), [`src/uvc/`](https://github.com/realsenseai/librealsense/tree/development/src/uvc), [`src/hid/`](https://github.com/realsenseai/librealsense/tree/development/src/hid)) together with the libusb layer in [`src/libusb/`](https://github.com/realsenseai/librealsense/tree/development/src/libusb) ([`src/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/src/CMakeLists.txt)). You do not need to pass `-DFORCE_RSUSB_BACKEND=ON` yourself on macOS. Passing it does no harm.
+`FORCE_RSUSB_BACKEND` then selects the `RS2_USE_LIBUVC_BACKEND` compile definition. This builds the shared RS USB, UVC and HID sources ([`src/rsusb-backend/`](https://github.com/realsenseai/librealsense/tree/development/src/rsusb-backend), [`src/uvc/`](https://github.com/realsenseai/librealsense/tree/development/src/uvc), [`src/hid/`](https://github.com/realsenseai/librealsense/tree/development/src/hid), [`src/libuvc/`](https://github.com/realsenseai/librealsense/tree/development/src/libuvc)) together with the libusb layer in [`src/libusb/`](https://github.com/realsenseai/librealsense/tree/development/src/libusb) ([`src/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/src/CMakeLists.txt)). You do not need to pass `-DFORCE_RSUSB_BACKEND=ON` yourself on macOS. Passing it does no harm.
 
 The repository guide ([`doc/installation_osx.md`](https://github.com/realsenseai/librealsense/blob/development/doc/installation_osx.md)) says macOS support for the full range of SDK functionality is not yet complete. For macOS it describes building from source only.
 
@@ -23,7 +23,7 @@ The repository guide ([`doc/installation_osx.md`](https://github.com/realsenseai
 - **libusb** (optional). [`CMake/libusb_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/libusb_config.cmake) looks for an installed `usb-1.0` library and `libusb.h`. If it finds them, it links that libusb. Otherwise it prints `libusb not found; using internal version` and builds libusb statically from `libusb-cmake` (tag `v1.0.27-1`).
 - **OpenSSL.** It is needed with the default options. `ENABLE_STATS` is `ON` on every platform, and `CHECK_FOR_UPDATES`, `ENABLE_AI_ASSISTANT` or `ENABLE_STATS` each pull in a bundled libcurl. On macOS that libcurl is built against OpenSSL (`find_package(OpenSSL REQUIRED)` in [`CMake/external_libcurl.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/external_libcurl.cmake)). To build without OpenSSL, configure with `-DENABLE_STATS=OFF` and leave `CHECK_FOR_UPDATES` and `ENABLE_AI_ASSISTANT` at their macOS default (`OFF`).
 - **GLFW 3.3 or newer** (optional). This is for the graphical examples, the RealSense Viewer and the Depth Quality Tool. If `find_package(glfw3 3.3)` fails, the build prints `GLFW 3.3 not found; using internal version` and uses [`third-party/glfw`](https://github.com/realsenseai/librealsense/tree/development/third-party/glfw).
-- **Network access during configuration and build.** Several dependencies are cloned by CMake. nlohmann/json (unless `USE_EXTERNAL_NLOHMANN_JSON=ON`) and FastCDR (`BUILD_ROSBAG2` is `ON` by default) are cloned at configure time. libcurl, and libusb when no system libusb is found, are cloned during the build.
+- **Network access during configuration and build.** Several dependencies are downloaded by CMake. nlohmann/json (unless `USE_EXTERNAL_NLOHMANN_JSON=ON`), and FastCDR and libdeflate (`BUILD_ROSBAG2` is `ON` by default), are cloned at configure time. libcurl, yaml-cpp and SQLite (both for `BUILD_ROSBAG2`), and libusb when no system libusb is found, are downloaded during the build.
 
 The repository guide installs the tools with Homebrew:
 
@@ -32,7 +32,7 @@ sudo xcode-select --install
 brew install cmake libusb pkg-config openssl
 ```
 
-The project's macOS CI job (`Mac_DDS_cpp` in [`.github/workflows/buildsCI.yaml`](https://github.com/realsenseai/librealsense/blob/development/.github/workflows/buildsCI.yaml), on a `macos-15` runner) installs `glfw` and `libusb` with Homebrew before building.
+The project's macOS CI job (`Mac_DDS_cpp` in [`.github/workflows/buildsCI.yaml`](https://github.com/realsenseai/librealsense/blob/development/.github/workflows/buildsCI.yaml), on a `macos-15` runner) installs `coreutils`, `glfw` and `libusb` (if missing) with Homebrew before building.
 
 ### Steps (Makefiles)
 
@@ -43,7 +43,7 @@ The project's macOS CI job (`Mac_DDS_cpp` in [`.github/workflows/buildsCI.yaml`]
    cd librealsense
    ```
 
-2. Create a build directory and configure. Homebrew's OpenSSL is not on CMake's default search path, so point CMake at it:
+2. Create a build directory and configure. If CMake reports `Could NOT find OpenSSL`, the repository guide ([`doc/installation_osx.md`](https://github.com/realsenseai/librealsense/blob/development/doc/installation_osx.md)) points it at Homebrew's OpenSSL:
 
    ```bash
    mkdir build && cd build
@@ -61,7 +61,7 @@ The project's macOS CI job (`Mac_DDS_cpp` in [`.github/workflows/buildsCI.yaml`]
 
    The CI job uses `cmake --build . -- -j4`, which does the same with the Makefile generator.
 
-4. Optionally, install headers, libraries, the CMake and pkg-config package files, and the built tools and examples into `CMAKE_INSTALL_PREFIX` ([`CMake/install_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/install_config.cmake)):
+4. Optionally, install headers, libraries and the CMake and pkg-config package files ([`CMake/install_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/install_config.cmake)), plus the built tools and examples (each one's own `CMakeLists.txt`), into `CMAKE_INSTALL_PREFIX`:
 
    ```bash
    sudo make install
@@ -72,7 +72,7 @@ The project's macOS CI job (`Mac_DDS_cpp` in [`.github/workflows/buildsCI.yaml`]
 For reference, the CI job configures with:
 
 ```bash
-cmake .. -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true -DBUILD_WITH_DDS=true
+cmake .. -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true -DBUILD_WITH_DDS=true
 ```
 
 ### Using Xcode
@@ -126,14 +126,14 @@ sudo ./rs-multicam
 sudo ./realsense-viewer
 ```
 
-The code does what the guide describes. When the library opens a camera interface on macOS, it disables libusb's automatic kernel-driver detach and explicitly detaches the macOS driver from that interface (`libusb_detach_kernel_driver`). It then waits 500 ms for the device to re-enumerate. When the device is released, it re-attaches the driver ([`src/libusb/darwin-device-capture.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/libusb/darwin-device-capture.cpp)). If the detach fails, the library throws `failed to capture USB device on Darwin`.
+The code does what the guide describes. When the library first opens a camera on macOS, it disables libusb's automatic kernel-driver detach and explicitly detaches the macOS driver from the interface being opened (`libusb_detach_kernel_driver`). If a driver was detached, it waits 500 ms for the device to re-enumerate. Later opens of the same physical device share this capture. When the last user releases the device, the library re-attaches the driver ([`src/libusb/darwin-device-capture.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/libusb/darwin-device-capture.cpp)). If the detach fails for any reason other than no driver being attached, the library throws `failed to capture USB device on Darwin`.
 
 The same applies to your own applications built against the SDK.
 
 ### macOS differences in the RealSense Viewer
 
 - The **Use GLSL for Rendering** and **Use GLSL for Processing** checkboxes are not shown in the Viewer settings on macOS ([`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp)).
-- If the OpenGL context does not provide OpenGL 3.0, the Viewer turns off GLSL rendering and processing. It initializes the ImGui OpenGL 3 backend with `#version 120` on macOS. It also defaults to font oversampling 2 and MSAA with 4 samples there ([`common/ux-window.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/ux-window.cpp)).
+- On macOS, GLSL rendering and processing are off by default. If the OpenGL context does not provide OpenGL 3.0, the Viewer also forces them off. It initializes the ImGui OpenGL 3 backend with `#version 120` on macOS. It also defaults to font oversampling 2 and MSAA with 4 samples there ([`common/ux-window.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/ux-window.cpp)).
 
 For the Viewer itself, see [[Realsense Viewer Manual]]. For the command-line tools, see [[Command Line Tools]], and for the examples, see [[Code Samples]].
 
