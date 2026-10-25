@@ -64,3 +64,7 @@ Need some help? Try our [Troubleshooting Q&A](https://github.com/realsenseai/lib
 - [[Release Notes]]
 - [[API Changes]]
 <!-- /wikigen:subjects -->
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`0d4fcab`](https://github.com/realsenseai/librealsense/commit/0d4fcabf634650b821200ad38eedaa13aa4cb704)._
+<!-- /wikigen:footer -->
