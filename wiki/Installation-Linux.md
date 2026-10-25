@@ -90,7 +90,7 @@ What the build does with each of these:
 - **OpenSSL (`libssl-dev`)**: the libcurl build uses OpenSSL on Linux (`-DCURL_USE_OPENSSL=ON`).
 - **libusb (`libusb-1.0-0-dev`)**: used if found. Otherwise CMake prints `libusb not found; using internal version` and builds libusb from source ([`CMake/libusb_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/libusb_config.cmake)).
 - **libudev (`libudev-dev`, found through `pkg-config`)**: optional for the V4L2 backend. Without it, CMake prints `UDEV not found; using polling device-watcher!` and the library polls for device changes instead of using udev events ([`src/linux/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/src/linux/CMakeLists.txt)).
-- **OpenGL and GLFW**: needed only for the graphical tools and examples (`BUILD_GRAPHICAL_EXAMPLES`, `ON` by default). OpenGL is a required package in [`CMake/opengl_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/opengl_config.cmake). If GLFW 3.3 is not found, CMake prints `GLFW 3.3 not found; using internal version` and builds the bundled copy in `third-party/glfw`, which needs the X11 development headers.
+- **OpenGL and GLFW**: needed whenever the examples are built (`BUILD_EXAMPLES`, `ON` by default). The examples link OpenGL, and the `realsense2-gl` library (`BUILD_GLSL_EXTENSIONS`, `ON` by default) is built with them. OpenGL is a required package in [`CMake/opengl_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/opengl_config.cmake). If GLFW 3.3 is not found, CMake prints `GLFW 3.3 not found; using internal version` and builds the bundled copy in `third-party/glfw`, which needs the X11 development headers.
 - **v4l-utils**: `scripts/setup_udev_rules.sh` stops with `v4l2-ctl not found, install with: sudo apt install v4l-utils` when `v4l2-ctl` is missing.
 
 ### 2. Get the source
@@ -111,7 +111,7 @@ Run the scripts below from this repository root. They use relative paths such as
 What [`scripts/setup_udev_rules.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/setup_udev_rules.sh) does:
 
 - It runs with `bash -e`, so it stops at the first failing command. It exits right away if `v4l2-ctl` is not installed.
-- If any `/dev/video*` node exists, it asks you to remove all RealSense cameras and waits for a key press.
+- If any `/dev/video*` node exists, it asks you to remove all RealSense cameras and waits until you press Enter.
 - It copies [`config/99-realsense-libusb.rules`](https://github.com/realsenseai/librealsense/blob/development/config/99-realsense-libusb.rules) to `/etc/udev/rules.d/`. This file sets `MODE:="0666", GROUP:="plugdev"` for the RealSense USB product IDs.
 - If `v4l2-ctl --list-devices` reports a `tegra` or `ipu6` device, it also installs:
   - [`config/99-realsense-d4xx-mipi-dfu.rules`](https://github.com/realsenseai/librealsense/blob/development/config/99-realsense-d4xx-mipi-dfu.rules) into `/etc/udev/rules.d/`
@@ -162,8 +162,8 @@ The script accepts these arguments:
 | `reset` | Rebuild and reinstall the stock Ubuntu modules without the RealSense patches. |
 | `ko` | Rebuild the modules from the existing source tree without fetching or patching it again. |
 | `uvc_dbg` | Also apply the `uvcvideo`/`videobuf2` debug patch. |
-| `xhci-patch` | Apply the xHCI and videobuf2 backports. Accepted only on kernel 4.4; on any other kernel the script exits. |
-| `build_usbcore_modules` | Also rebuild the usbcore, USB host and usbhid modules. Implies `xhci-patch`, so it is also accepted only on kernel 4.4. |
+| `xhci-patch` | Apply the xHCI and videobuf2 backports. Requires kernel 4.4, which the supported-kernel check rejects, so the script always exits. |
+| `build_usbcore_modules` | Also rebuild the usbcore, USB host and usbhid modules. Implies `xhci-patch`, so the script also always exits. |
 | `ubuntu <codename>` | Use this codename instead of the running system's, and only build the modules (do not load them). |
 | `kernel <version>` | Build for this kernel version instead of `uname -r`, and only build the modules. |
 
@@ -189,17 +189,17 @@ What the default configuration does:
 - **What gets built** ([`CMake/lrs_options.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/lrs_options.cmake)):
   - The shared library `librealsense2` (`BUILD_SHARED_LIBS=ON`).
   - The examples (`BUILD_EXAMPLES=ON`).
-  - The graphical examples and tools such as `realsense-viewer` and the depth quality tool (`BUILD_GRAPHICAL_EXAMPLES=ON`).
+  - The graphical examples and tools such as `realsense-viewer` and the depth quality tool (`BUILD_GRAPHICAL_EXAMPLES=ON`, built only together with `BUILD_EXAMPLES`).
   - The command-line tools such as `rs-enumerate-devices` and `rs-fw-update` (`BUILD_TOOLS=ON`).
   - Unit tests (`BUILD_UNIT_TESTS`), Python bindings (`BUILD_PYTHON_BINDINGS`) and DDS support (`BUILD_WITH_DDS`) are `OFF`.
 
 Common variations:
 
 ```sh
-# No OpenGL/X11: build the library, non-graphical examples and tools only
+# No realsense-viewer or depth quality tool: build the library, non-graphical examples and tools only
 cmake .. -DBUILD_GRAPHICAL_EXAMPLES=OFF
 
-# Library and tools only, no examples
+# Library and command-line tools only, no examples or graphical tools (no OpenGL/GLFW needed)
 cmake .. -DBUILD_EXAMPLES=OFF
 
 # Debug build
@@ -236,8 +236,8 @@ Every CMake option, with its default, is listed on [[Build Configuration]]. Pass
 | Option | Default | Use |
 |---|---|---|
 | `FORCE_RSUSB_BACKEND` | `OFF` | Use the RSUSB (libusb) backend instead of V4L2. |
-| `BUILD_EXAMPLES` | `ON` | Build the examples. When it is `OFF`, the tools are still built if `BUILD_TOOLS` is `ON`. |
-| `BUILD_GRAPHICAL_EXAMPLES` | `ON` | Build the OpenGL tools and examples (`realsense-viewer`, depth quality tool and others). |
+| `BUILD_EXAMPLES` | `ON` | Build the examples. When it is `OFF`, the command-line tools are still built if `BUILD_TOOLS` is `ON`, but the graphical tools are not. |
+| `BUILD_GRAPHICAL_EXAMPLES` | `ON` | Build the OpenGL tools and examples (`realsense-viewer`, depth quality tool and others). Takes effect only when `BUILD_EXAMPLES` is `ON`. |
 | `BUILD_TOOLS` | `ON` | Build the command-line tools. |
 | `BUILD_PYTHON_BINDINGS` | `OFF` | Build `pyrealsense2`. See [[Python Wrapper]]. |
 | `BUILD_WITH_CUDA` | `OFF` | Enable CUDA. See [[GPU Acceleration]]. |
@@ -259,7 +259,7 @@ cmake .. -DFORCE_RSUSB_BACKEND=ON
 
 The repository also has an all-in-one script, [`scripts/libuvc_installation.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/libuvc_installation.sh). It runs with `bash -xe` and does the following:
 
-1. If any `/dev/video*` node exists, it asks you to remove the cameras and waits for a key press.
+1. If any `/dev/video*` node exists, it asks you to remove the cameras and waits until you press Enter.
 2. It runs `apt-get update` and creates a fresh `~/librealsense_build` folder.
 3. If no swap is active, it creates and enables a 2 GB `/swapfile`.
 4. It installs `git cmake libssl-dev freeglut3-dev libusb-1.0-0-dev pkg-config libgtk-3-dev unzip`.
