@@ -11,6 +11,7 @@ The folder has these files:
 | [`build_image_multi_platform.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/Docker/build_image_multi_platform.sh) | Builds the image for `linux/amd64` and `linux/arm64` with `docker buildx` and saves each one to a tar file. |
 | [`run_image.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/Docker/run_image.sh) | Starts the `librealsense` image with access to the host's camera devices. |
 | [`readme.md`](https://github.com/realsenseai/librealsense/blob/development/scripts/Docker/readme.md) | The repository guide for the Docker image. |
+| [`LRS_Docker_Depth_example.gif`](https://github.com/realsenseai/librealsense/blob/development/scripts/Docker/LRS_Docker_Depth_example.gif) | Animated image that `readme.md` shows after its `rs-depth` example command. |
 
 The image does **not** contain your local source tree. The Dockerfile downloads the source archive of a release tag from GitHub and builds that. To containerize your own changes, you have to change the Dockerfile.
 
@@ -181,15 +182,15 @@ The build tools, sources and intermediate files stay in the builder stage.
 
 ## What the container provides
 
-- The librealsense shared library and headers under `/usr/local`.
+- The librealsense shared library, the `realsense2-gl` library (`BUILD_GLSL_EXTENSIONS` stays `ON`) and the headers under `/usr/local`.
 - The command-line tools built with `BUILD_TOOLS`, such as `rs-enumerate-devices`, `rs-fw-update`, `rs-convert`, `rs-record`, `rs-terminal`, `rs-fw-logger` and `rs-embed`. See [[Command Line Tools]].
 - The examples that are built without `BUILD_GRAPHICAL_EXAMPLES`, such as `rs-hello-realsense`, `rs-depth`, `rs-color`, `rs-distance`, `rs-callback` and `rs-save-to-disk`. Which examples these are depends on the `examples/*/CMakeLists.txt` files of the release you build. See [[Code Samples]].
-- The `pyrealsense2` Python module, without a Python interpreter (see below).
+- The `pyrealsense2` Python module, but `python3` is not listed in the final stage's packages (see below).
 
 ## Limitations
 
 - **No graphical tools.** `realsense-viewer`, the Depth Quality Tool and the OpenGL examples are not built. The run script also does not pass a display into the container.
-- **No Python interpreter.** The final stage does not install `python3`. To use `pyrealsense2`, install the `python3` package of the same base image in the container, or add it to the Dockerfile. See [[Python Wrapper]].
+- **Python not listed.** The final stage does not list `python3` among its packages (only `libusb-1.0-0`, `udev`, `apt-transport-https`, `ca-certificates`, `curl` and `software-properties-common`). Whether an interpreter ends up in the image depends on what those packages pull in from the base image. If `python3` is missing, install the `python3` package of the same base image in the container, or add it to the Dockerfile. See [[Python Wrapper]].
 - **Released source only.** The image is always built from a GitHub release tag, not from the `development` branch or your working tree.
 - **Host kernel drivers.** The image uses the V4L2 backend, so the camera is reached through the host kernel's video and USB drivers. Set up the host as described in [[Installation Linux]].
 - **Device access is limited to two device types.** The cgroup rules in `run_image.sh` only allow character devices with major numbers 81 and 189. Devices with other major numbers, such as the `iio*` devices that also appear in `99-realsense-libusb.rules`, are not covered. The repository guide lists IMU devices as not supported by the container.
