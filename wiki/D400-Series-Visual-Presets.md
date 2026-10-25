@@ -1,6 +1,7 @@
 ## Overview
-The [RealSense Viewer](https://github.com/realsenseai/librealsense/tree/master/tools/realsense-viewer ) tool supports several predefined depth presets that can be selected according to the user's usage.
+The [RealSense Viewer](https://github.com/realsenseai/librealsense/tree/development/tools/realsense-viewer) tool supports several predefined depth presets that can be selected according to the user's usage.
 The predefined presets are listed in the table below. The table explains some of the recommended use cases for each predefined preset. There are also examples of images with each preset and a corresponding JSON file.<br>
+In the API the presets are the values of the depth sensor option `RS2_OPTION_VISUAL_PRESET` (enum `rs2_rs400_visual_preset` in [rs_option.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_option.h); `rs2_rs400_visual_preset_to_string` gives the names shown in the Viewer). Selecting a preset requires the device to be in Advanced Mode (see [[D400 Advanced Mode]]); the presets are applied by [advanced_mode.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/advanced_mode/advanced_mode.cpp) with the values in [presets.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/advanced_mode/presets.cpp). Changing any Advanced Mode control afterwards switches the option to `Custom`.<br>
 The user can also modify the settings via the Advanced Mode menu and save a customized user preset. All the settings can be saved and loaded via the tool's menu. We use machine learning algorithms and capture of ground truth datasets to optimize preset for certain conditions, and we may add more presets in the future. The developers can do this too, or just start adjusting the parameters by hand, but we do not provide guidance on this.
 The key to good depth is to start from our recommended defaults:
 * 	D435 / D435i / D455 / D456: Use 848x480 resolution @30fps, with auto-exposure.  Use post processing with downsample 2.   
@@ -28,8 +29,10 @@ The resolution range is:
 | Medium Density | Balance between Fill factor and accuracy. |[MedDensityPreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/MidDensityPreset.json)|
 | High Accuracy | High confidence threshold value of depth, lower fill factor.  (Ex. Object Scanning,  Collision Avoidance, Robots) |[HighAccuracyPreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/HighAccuracyPreset.json)|
 | Hand | Good for Hand Tracking,  Gesture recognition, good edges |[HandGesturePreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/HandGesturePreset.json)|	 
-| Left Imager Color w/o IR Pattern | Removes the Projector-generated IR pattern from left imager when streaming synthetic RGB.<br> Applies to D415 and D410 Devices.<br> Supported since FW ver 5.9.10+|[D415_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D415_RemoveIR.json) |
+| Left Imager Color w/o IR Pattern (`Remove Ir Pattern`) | Removes the Projector-generated IR pattern from left imager when streaming synthetic RGB.<br> Applies to D400, D410, D415 and D460 Devices.<br> Supported since FW ver 5.9.10+|[D415_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D415_RemoveIR.json), [D460_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D460_RemoveIR.json) |
 | Default | Best Visual appeal, Clean edges,  Reduced PointCloud Spraying | [DefaultPreset_D415.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D415.json), [DefaultPreset_D435.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D435.json), [DefaultPreset_D455.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D455.json)  |
+| Edge Enhancement | Built-in preset (`RS2_RS400_VISUAL_PRESET_EDGE_ENHANCEMENT`), available on all D400 devices. | - |
+| Custom | Reported when the settings were changed by hand or loaded from a JSON file; selecting it does not change any setting. | - |
 
 
 <br>Additional Presets not in the Viewer:
@@ -38,7 +41,7 @@ The resolution range is:
 | ------------------------- | --------------- | -- |
 | Vacuum Cleaner | [ShortRangePreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/ShortRangePreset.json) |
 | Body Scan | [BodyScanPreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/BodyScanPreset.json)|
-| Edge Map| [EdgeMapD435.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/EdgeMapD435.json) | <p align="center"><b>Edges</b><br><img width=80% src="https://raw.githubusercontent.com/wiki/realsenseai/librealsense/res/edgemap.jpg" /></p>|
+| Edge Map (JSON file; see also the built-in Edge Enhancement preset above)| [EdgeMapD435.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/EdgeMapD435.json) | <p align="center"><b>Edges</b><br><img width=80% src="https://raw.githubusercontent.com/wiki/realsenseai/librealsense/res/edgemap.jpg" /></p>|
 
 ## Example Pictures
 Please refer to the example pictures below captured with the various presets. The depth presets are evaluated and compared based on:
@@ -102,3 +105,7 @@ Hand tracking and gesture recognition.<br>
 1. Best parameters for **short-range**:
 * [Finding the best acquisition parameters](https://github.com/realsenseai/librealsense/issues/1171)
 * [D435 Recommended configuration for near-range (< 1m) accuracy](https://github.com/realsenseai/librealsense/issues/1021)
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`5c14a0b`](https://github.com/realsenseai/librealsense/commit/5c14a0b5309a878032e7196889df475adf8c4f7d)._
+<!-- /wikigen:footer -->
