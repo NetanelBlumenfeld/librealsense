@@ -16,7 +16,7 @@ The `BUILD_WITH_NEON` option (default `ON`) exists only when `CMAKE_SYSTEM_PROCE
 The two Linux backends are both available:
 
 - **V4L2** (default, `FORCE_RSUSB_BACKEND=OFF`) uses the kernel's `uvcvideo` driver. The kernel patch scripts in [`scripts/`](https://github.com/realsenseai/librealsense/tree/development/scripts) target Ubuntu and some other distributions. None of them targets the Raspberry Pi OS kernel.
-- **RSUSB** (`-DFORCE_RSUSB_BACKEND=ON`) talks to the camera over libusb from user space and does not depend on kernel patches. The repository's Raspberry Pi guide builds with this backend, through the deprecated `FORCE_LIBUVC` option. That option still works: it prints a deprecation message and turns on `FORCE_RSUSB_BACKEND` ([`CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/CMakeLists.txt)).
+- **RSUSB** (`-DFORCE_RSUSB_BACKEND=ON`) talks to the camera over libusb from user space and does not depend on kernel patches. The repository's old Raspberry Pi guide (according to doc/installation_raspbian.md) builds with this backend, through the deprecated `FORCE_LIBUVC` option. That option still works: it prints a deprecation message and turns on `FORCE_RSUSB_BACKEND` ([`CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/CMakeLists.txt)).
 
 The steps below use RSUSB.
 
@@ -42,16 +42,16 @@ sudo apt-get install v4l-utils
 Some notes for the Pi:
 
 - **CMake**: the top-level [`CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/CMakeLists.txt) requires CMake 3.10 or newer. Check with `cmake --version`. The old guide's steps for building CMake 3.11 by hand are not needed with a current distribution.
-- **Network access**: the default configuration downloads third-party sources (Fast-CDR, nlohmann/json, libcurl) while it configures or builds. The Python bindings also clone pybind11. Keep the Pi online for the first build.
+- **Network access**: the default configuration downloads third-party sources (Fast-CDR, nlohmann/json, libdeflate, SQLite, yaml-cpp, libcurl) while it configures or builds. The Python bindings also clone pybind11 and pybind11_json. Keep the Pi online for the first build.
 - **libusb**: if `libusb-1.0-0-dev` is missing, CMake prints `libusb not found; using internal version` and builds libusb from source ([`CMake/libusb_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/libusb_config.cmake)).
 - **GLFW**: if GLFW 3.3 is not found, CMake prints `GLFW 3.3 not found; using internal version` and builds the bundled copy, which needs the X11 development headers. You only need OpenGL and GLFW for the examples and graphical tools. To build without them, see [Headless builds](#headless-builds).
 - **v4l-utils**: `scripts/setup_udev_rules.sh` needs `v4l2-ctl` even when you use the RSUSB backend.
 
-The old repository guide also installs protobuf, TBB and OpenCV from third-party `.deb` files and GitHub forks. The default librealsense build does not need any of these. OpenCV is used only by the optional OpenCV examples (`BUILD_CV_EXAMPLES`, `OFF` by default). Those steps are not repeated here.
+The old repository guide ([`doc/installation_raspbian.md`](https://github.com/realsenseai/librealsense/blob/development/doc/installation_raspbian.md)) also installs protobuf, TBB and OpenCV from third-party `.deb` files and GitHub forks. The default librealsense build does not need any of these. OpenCV is used only by optional parts: the OpenCV examples, the OpenVINO examples and the `rs-pcl-color` PCL example (`BUILD_CV_EXAMPLES`, `BUILD_OPENVINO_EXAMPLES`, `BUILD_PCL_EXAMPLES`, all `OFF` by default), and `realsense-viewer` when `OpenCV_DIR` points to an existing folder. Those steps are not repeated here.
 
 ### 2. Add swap if the Pi has little RAM
 
-The repository guides say that on a Raspberry Pi with little RAM the compiler can run out of memory. They recommend increasing swap before building. On Raspberry Pi OS, the old guide sets `CONF_SWAPSIZE=2048` in `/etc/dphys-swapfile` and restarts the `dphys-swapfile` service. The swap service and its defaults belong to the OS, so check its documentation for your release.
+The repository guides say that on a Raspberry Pi with little RAM the compiler can run out of memory. The old guide ([`doc/installation_raspbian.md`](https://github.com/realsenseai/librealsense/blob/development/doc/installation_raspbian.md)) adds swap before building: it sets `CONF_SWAPSIZE=2048` in `/etc/dphys-swapfile` and restarts the `dphys-swapfile` service. [`doc/RaspberryPi3.md`](https://github.com/realsenseai/librealsense/blob/development/doc/RaspberryPi3.md) suggests creating a swap file and compiling again if the build crashes. The swap service and its defaults belong to the OS, so check its documentation for your release.
 
 Building with fewer parallel jobs also reduces memory use (see step 5).
 
@@ -89,7 +89,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 To remove the rules again, run `./scripts/setup_udev_rules.sh --uninstall`.
 
-Do not apply the kernel patch scripts from [[Installation Linux]] on Raspberry Pi OS. They check for specific Ubuntu codenames and kernel versions and exit on anything else.
+Do not apply the Ubuntu kernel patch scripts from [[Installation Linux]] (`patch-realsense-ubuntu-lts-hwe.sh`, `patch-realsense-ubuntu-lts.sh`) on Raspberry Pi OS. They choose the patches from the Ubuntu codename and the kernel version and stop with an `Unsupported distribution` or `Unsupported kernel version` error for anything else ([`scripts/patch-utils-hwe.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/patch-utils-hwe.sh), [`scripts/patch-utils.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/patch-utils.sh)).
 
 ### 5. Configure, build and install
 
@@ -165,7 +165,7 @@ All options are listed on [[Build Configuration]]. These are the ones that matte
 
 What the build does ([`CMake/external_pybind11.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/external_pybind11.cmake), [`wrappers/python/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/CMakeLists.txt)):
 
-- It clones pybind11 from GitHub while it configures and prints `Fetching pybind11...`. Without a network connection, [`wrappers/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/wrappers/CMakeLists.txt) warns `No internet connection. Cloning Python bindings may fail`.
+- It clones pybind11 and pybind11_json from GitHub while it configures and prints `Fetching pybind11...` and `Fetching pybind11_json...`. If a download fails, configuration stops with `Failed to download pybind11` or `Failed to download pybind11_json` ([`CMake/external_pybind11.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/external_pybind11.cmake)). If CMake's earlier connectivity check fails, [`wrappers/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/wrappers/CMakeLists.txt) also warns `No internet connection. Cloning Python bindings may fail`, but only after the downloads have succeeded.
 - `PYTHON_EXECUTABLE` is passed on to the pybind11 build.
 - With CMake 3.12 or newer, it finds Python with `find_package(Python REQUIRED COMPONENTS Interpreter Development)`. It installs the module into `${Python_SITEARCH}/pyrealsense2`, the interpreter's own platform-specific site-packages folder, together with `pyrealsense2/__init__.py`. With an older CMake, the folder is `<libdir>/python<major>.<minor>/pyrealsense2` under the install prefix.
 - The built module is also in `build/Release/`, next to `librealsense2.so`.
@@ -198,7 +198,7 @@ Which stream profiles are available over USB 2 depends on the camera and its fir
 | `Multiple realsense udev-rules were found!` | `realsense-viewer` | Both the source-install rules and the Debian package rules exist. Remove one of them. |
 | `v4l2-ctl not found, install with: sudo apt install v4l-utils` | `scripts/setup_udev_rules.sh` | Install `v4l-utils` and run the script again. |
 | `Remove all RealSense cameras attached. Hit any key when ready` | `scripts/setup_udev_rules.sh` | Printed whenever any `/dev/video*` node exists. Unplug the camera and press Enter. |
-| `Permission Denied! This is often an indication of outdated or missing udev-rules.` | librealsense during firmware update ([`src/fw-update/fw-update-device.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/fw-update/fw-update-device.cpp)) | Install or update the udev rules. |
+| `Permission Denied! This is often an indication of outdated or missing udev-rules.` | Error thrown by librealsense when USB access to a camera in firmware-update (DFU) mode is denied, either while the device is opened or during the update ([`src/fw-update/fw-update-device.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/fw-update/fw-update-device.cpp)). The application gets it as a librealsense error. | Install or update the udev rules. |
 | `No internet connection. Cloning Python bindings may fail` | `wrappers/CMakeLists.txt` | Connect the Pi to the network and configure again. |
 | `import pyrealsense2` fails | Python cannot find the module | Check that you ran `sudo make install` with the same `python3` you import from. Check the install folder printed by `make install`, or set `PYTHON_INSTALL_DIR` and configure again. |
 | The camera is listed, but high resolutions or frame rates are missing | USB 2 port or bandwidth | See [Camera performance on the Pi](#camera-performance-on-the-pi). Use a USB 3 port where the board has one. |
