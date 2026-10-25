@@ -3,7 +3,7 @@ RealSense depth cameras run firmware that can be replaced from the host. libreal
 ## Before you start
 
 - Get a firmware image (`.bin`) for your camera. The SDK does not ship firmware images; they are published on the RealSense firmware releases page, https://dev.realsenseai.com/docs/firmware-updates.
-- Close every other application that uses the camera. When the library cannot write a firmware block it reports `Please verify that no other librealsense application is running` (see [Troubleshooting](#troubleshooting)).
+- Close every other application that uses the camera. When the library cannot write a firmware block to a USB update device, the Viewer and `rs-fw-update` show an error ending in `Please verify that no other librealsense application is running` (with `-r`, `rs-fw-update` prints only `Failed to recover device`; see [Troubleshooting](#troubleshooting)).
 - On Linux, the udev rules must be installed (`./scripts/setup_udev_rules.sh` when building from source). See [[Installation Linux]].
 - Do not disconnect the camera while an update is running.
 
@@ -72,7 +72,7 @@ The tool then:
 
 1. Reads the file and prints `Updating device FW:` with the device line.
 2. Checks compatibility; if the image does not fit the device it prints `This firmware version is not compatible with <device name>` and stops.
-3. For devices that are not GMSL (MIPI), asks the device to enter its update state and waits up to 15 seconds for it to re-enumerate as an update device. A GMSL device that is already an update device is used directly.
+3. For devices that are not GMSL (MIPI), asks the device to enter its update state. A device that already is an update device (GMSL devices, Ethernet (DDS) devices) is used directly; otherwise the tool waits up to 15 seconds for it to re-enumerate as an update device.
 4. Writes the image, showing `Firmware update progress: <n>[%]` when the output is a terminal, then prints `Firmware update done`.
 5. Prints `Waiting for device to reconnect...`, waits up to 15 seconds, and prints `Device <serial> successfully updated to FW: <version>` for the reconnected camera.
 
@@ -110,13 +110,13 @@ When built with DDS support, `--eth`, `--eth-only` and `--no-eth` are mutually e
 Flag combinations, as the tool handles them:
 
 - `-l` wins over everything else.
-- Without `-f` or `-b` the tool prints `Nothing to do, run again with -h for help` and exits with an error.
+- With other flags (such as `-r`, `-u` or `-s`) but without `-f` or `-b`, the tool prints `Nothing to do, run again with -h for help` and exits with an error.
 - `-b` alone only makes the backup; `-b` together with `-f` makes the backup first and then updates.
 - `-u` only has an effect together with `-f`.
 
 ## Recovery mode
 
-A camera whose firmware is missing or damaged comes up as a recovery (DFU) device. It shows in `rs-fw-update -l` with its update serial number; its firmware version is shown only when the device reports one. If you run a normal update on it, the tool prints `Device is in recovery mode, use -r to recover`.
+A camera whose firmware is missing or damaged comes up as a recovery (DFU) device. It shows in `rs-fw-update -l` with its update serial number; its firmware version shows as `unknown` when the device does not report one. If you run a normal update on a USB or GMSL recovery device that is the only connected device, the tool prints `Device is in recovery mode, use -r to recover`.
 
 Recover it with:
 
@@ -138,7 +138,7 @@ or reboot the system
 
 For GMSL devices the library writes the whole image to the device's DFU character device and reports progress estimated from the image size, held below 100% until the write finishes *(changed in the next release)*. In v2.59.1 the image was written in 1 KB blocks with progress reported per block.
 
-In the Viewer, a recovery device shows the same **Update Firmware** menu item; the Viewer writes the image to it directly and then waits for the camera to reconnect.
+In the Viewer, a recovery device shows the same **Update Firmware** menu item; the Viewer writes the image to it directly and then waits for the camera to reconnect, except for GMSL recovery devices, where it logs the driver-reload message shown above instead.
 
 ## Signed and unsigned images
 
@@ -158,7 +158,7 @@ The API's unsigned call takes an `update_mode`: `RS2_UNSIGNED_UPDATE_MODE_UPDATE
 
 A flash backup is a copy of the camera flash. It is not a valid firmware image and cannot be loaded back to the device, but it contains the calibration and device information (`rs2::updatable::create_flash_backup` in [`include/librealsense2/hpp/rs_device.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_device.hpp)).
 
-- **rs-fw-update:** `-b <path>` writes the backup to `<path>` and prints `Flash backup progress: <n>[%]`. If the device returns no data it prints `Backup flash is not supported`; if the file cannot be written, `Creating backup file failed`.
+- **rs-fw-update:** `-b <path>` writes the backup to `<path>` and, when the output is a terminal, prints `Flash backup progress: <n>[%]`. If the device returns no data it prints `Backup flash is not supported`; if the file cannot be written, `Creating backup file failed`.
 - **Viewer:** before a signed or unsigned update of a non-GMSL device, the Viewer tries a backup automatically and saves it as `<update id>.<timestamp>.bin` in the application data folder: the roaming AppData folder on Windows, and the home directory as a hidden file (`~/.<update id>.<timestamp>.bin`) on Linux and macOS. The log shows `Backup completed and saved as '<path>'`, or `Backup flash is not supported`. If the backup fails the Viewer logs `WARNING: backup failed; continuing without it...` and continues.
 
 D500 devices return an empty backup ([`src/ds/d500/d500-device.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-device.cpp)), so for them both tools report that backup is not supported.
@@ -177,7 +177,7 @@ The public API is in [`include/librealsense2/h/rs_device.h`](https://github.com/
 | `rs2::update_device` | `RS2_EXTENSION_UPDATE_DEVICE` | A device in update (recovery/DFU) state. |
 | `rs2::update_device::update(image, [callback])` | `rs2_update_firmware`, `rs2_update_firmware_cpp` | Write a signed image. Runs on the caller's thread; the callback gets progress from 0 to 1. |
 | `rs2::device::is_in_recovery_mode()` | `rs2_is_in_recovery_mode` | `true` for a device in recovery mode. |
-| | `rs2_get_firmware_min_version` | Minimum firmware version supported by the device's SKU, as a dotted string. |
+| `rs2::device::get_firmware_min_version()` | `rs2_get_firmware_min_version` | Minimum firmware version supported by the device's SKU, as a dotted string. |
 
 `rs2_update_firmware` and `rs2_update_firmware_cpp` work only on a device for which `is<rs2::update_device>()` is true. For a USB camera, call `enter_update_state()` first and find the device again by `RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID`, which both tools use to match the device across the switch. A short C++ version of what `rs-fw-update` does for one USB camera:
 
