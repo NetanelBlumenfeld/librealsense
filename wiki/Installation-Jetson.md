@@ -142,7 +142,7 @@ From the repository root (note the `L4T` suffix):
 5. It installs `build-essential git libssl-dev curl`.
 6. It creates a `Tegra` folder in the current directory and copies [`scripts/Tegra/sync.sh`](https://github.com/realsenseai/librealsense/blob/development/scripts/Tegra/sync.sh) and the matching `.repos` file into it.
 7. It downloads NVIDIA's license text for the kernel sources and shows it. You must press a key within 30 seconds to accept; otherwise the `read -t 30` times out and the script stops. If the license cannot be downloaded, it prints `License link not found` and exits.
-8. It runs `sync.sh -k jetson_<L4T version>` to fetch the kernel source for your L4T tag. `sync.sh` first checks which NVIDIA git server is reachable (`gitlab.com/nvidia/nv-tegra` or `nv-tegra.nvidia.com`).
+8. It runs `sync.sh -k jetson_<L4T version>` (for 39.2, `jetson_39.2.0`) to fetch the kernel source for your L4T tag. `sync.sh` first checks which NVIDIA git server is reachable (`gitlab.com/nvidia/nv-tegra` or `nv-tegra.nvidia.com`).
 9. It configures the kernel tree, applies the RealSense patches and builds the `uvcvideo`, `v4l2-core` and (for JetPack 6 and 7) the HID and IIO motion-sensor modules.
 10. It installs the modules, runs `depmod` and reloads them. On success it prints `Script has completed. Please consult the installation guide for further instruction.`
 
@@ -211,16 +211,16 @@ Messages you may see, and where they come from:
 
 | Message | Printed by | What to do |
 |---|---|---|
-| `Running on NVIDIA Jetson without the CUDA runtime installed.` | `realsense-viewer` ([`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp)), when `/etc/nv_tegra_release` exists, the build has no CUDA, and `/usr/local/cuda` does not exist | Install CUDA through NVIDIA JetPack, then rebuild with `-DBUILD_WITH_CUDA=ON`. |
-| `Running on NVIDIA Jetson with the CUDA runtime installed,` ... `rebuild librealsense with -DBUILD_WITH_CUDA=ON.` | `realsense-viewer`, when the build has no CUDA but `/usr/local/cuda` exists | Rebuild with `-DBUILD_WITH_CUDA=ON`. |
-| `Running on NVIDIA Jetson and realsense-viewer was built with CUDA,` ... `the CUDA runtime failed to initialize` | `realsense-viewer`, when the build has CUDA but no GPU device is reported | Check the CUDA driver and library stack on the board. The SDK log has the `cudaGetDeviceCount` error. |
+| `Running on NVIDIA Jetson without the CUDA runtime installed.` | `realsense-viewer` and `rs-depth-quality` ([`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp)), when `/etc/nv_tegra_release` exists, the build has no CUDA, and `/usr/local/cuda` does not exist | Install CUDA through NVIDIA JetPack, then rebuild with `-DBUILD_WITH_CUDA=ON`. |
+| `Running on NVIDIA Jetson with the CUDA runtime installed,` ... `rebuild librealsense with -DBUILD_WITH_CUDA=ON.` | `realsense-viewer` and `rs-depth-quality`, when `/etc/nv_tegra_release` exists, the build has no CUDA, and `/usr/local/cuda` exists | Rebuild with `-DBUILD_WITH_CUDA=ON`. |
+| `Running on NVIDIA Jetson and realsense-viewer was built with CUDA,` ... `the CUDA runtime failed to initialize` | `realsense-viewer` and `rs-depth-quality`, when `/etc/nv_tegra_release` exists, the build has CUDA, but no GPU device is reported | Check the CUDA driver and library stack on the board. The SDK log has the `cudaGetDeviceCount` error. |
 | `/etc/nv_tegra_release not present, aborting script` | `scripts/patch-realsense-ubuntu-L4T.sh` | The script runs only on an L4T image. |
 | `Unsupported JetPack revision ... aborting script` | `scripts/patch-realsense-ubuntu-L4T.sh` | Your L4T version is not in the table above. Build with `-DFORCE_RSUSB_BACKEND=ON` instead. |
 | `License link not found` | `scripts/patch-realsense-ubuntu-L4T.sh` | The NVIDIA license page for your L4T release could not be downloaded. Check the network connection. |
 | `Failed to unload module <name>. Error type <n>. Try rebooting` | `scripts/patch-utils-hwe.sh` (used by the L4T script) | A module is still in use. Unplug the cameras, stop programs that use them, reboot and run the script again. |
-| `Failed to reload module <name>. Error type <n>. Operation is aborted` | `scripts/patch-utils-hwe.sh` | A patched module (JetPack 6 and 7 path) did not load. Check that `uname -r` matches the kernel the modules were built for. |
+| `Failed to reload module <name>. Error type <n>. Operation is aborted` | `scripts/patch-utils-hwe.sh` | A module did not load: a patched module (JetPack 6 and 7 path) or a dependent module being reloaded (JetPack 5 path). Check that `uname -r` matches the kernel the modules were built for. |
 | `Failed to insert the patched module. Operation is aborted, the original module is restored` | `scripts/patch-utils-hwe.sh` | The patched module (JetPack 5 path) did not load and the original was restored. Check that the running kernel matches your L4T release. |
-| `RealSense UDEV-Rules are missing!` | `realsense-viewer` | Run `./scripts/setup_udev_rules.sh`. See [[Installation Linux]] for the other udev messages. |
+| `RealSense UDEV-Rules are missing!` | `realsense-viewer` and `rs-depth-quality` | Run `./scripts/setup_udev_rules.sh`. See [[Installation Linux]] for the other udev messages. |
 
 If the patch script stopped halfway, the `Tegra` folder it created in the repository root is reused on the next run. `sync.sh` prints `...but the directory is not a git repository -- clean it up first` and stops if a source folder there is not a git checkout; delete that folder and run the script again.
 
