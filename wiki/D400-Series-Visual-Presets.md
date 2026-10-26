@@ -1,5 +1,5 @@
 ## Overview
-The [RealSense Viewer](https://github.com/realsenseai/librealsense/tree/master/tools/realsense-viewer ) tool supports several predefined depth presets that can be selected according to the user's usage.
+The [RealSense Viewer](https://github.com/realsenseai/librealsense/tree/development/tools/realsense-viewer ) tool supports several predefined depth presets that can be selected according to the user's usage.
 The predefined presets are listed in the table below. The table explains some of the recommended use cases for each predefined preset. There are also examples of images with each preset and a corresponding JSON file.<br>
 The user can also modify the settings via the Advanced Mode menu and save a customized user preset. All the settings can be saved and loaded via the tool's menu. We use machine learning algorithms and capture of ground truth datasets to optimize preset for certain conditions, and we may add more presets in the future. The developers can do this too, or just start adjusting the parameters by hand, but we do not provide guidance on this.
 The key to good depth is to start from our recommended defaults:
@@ -28,11 +28,12 @@ The resolution range is:
 | Medium Density | Balance between Fill factor and accuracy. |[MedDensityPreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/MidDensityPreset.json)|
 | High Accuracy | High confidence threshold value of depth, lower fill factor.  (Ex. Object Scanning,  Collision Avoidance, Robots) |[HighAccuracyPreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/HighAccuracyPreset.json)|
 | Hand | Good for Hand Tracking,  Gesture recognition, good edges |[HandGesturePreset.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/HandGesturePreset.json)|	 
-| Left Imager Color w/o IR Pattern | Removes the Projector-generated IR pattern from left imager when streaming synthetic RGB.<br> Applies to D415 and D410 Devices.<br> Supported since FW ver 5.9.10+|[D415_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D415_RemoveIR.json) |
+| Left Imager Color w/o IR Pattern | Removes the Projector-generated IR pattern from left imager when streaming synthetic RGB.<br> Applies to D400, D410, D415 and D460 Devices.<br> Supported since FW ver 5.9.10+|[D415_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D415_RemoveIR.json), [D460_RemoveIR.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/D460_RemoveIR.json) |
 | Default | Best Visual appeal, Clean edges,  Reduced PointCloud Spraying | [DefaultPreset_D415.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D415.json), [DefaultPreset_D435.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D435.json), [DefaultPreset_D455.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/DefaultPreset_D455.json)  |
+| Edge Enhancement | Stronger edge preservation (same depth-control settings as the Edge Map preset below) | [EdgeMapD435.json](https://raw.githubusercontent.com/wiki/realsenseai/librealsense/d400_presets/EdgeMapD435.json) |
 
 
-<br>Additional Presets not in the Viewer:
+<br>Additional Presets not in the Viewer (the Edge Map depth-control settings are available in the Viewer as the Edge Enhancement preset):
 
 | Preset Use case | JSON file | Notes
 | ------------------------- | --------------- | -- |
@@ -102,3 +103,7 @@ Hand tracking and gesture recognition.<br>
 1. Best parameters for **short-range**:
 * [Finding the best acquisition parameters](https://github.com/realsenseai/librealsense/issues/1171)
 * [D435 Recommended configuration for near-range (< 1m) accuracy](https://github.com/realsenseai/librealsense/issues/1021)
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`65ed974`](https://github.com/realsenseai/librealsense/commit/65ed97469471f9d104969d2b7d029506058819bd)._
+<!-- /wikigen:footer -->
