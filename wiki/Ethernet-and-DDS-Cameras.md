@@ -28,6 +28,8 @@ A DDS-enabled build still does not look for network cameras until DDS is enabled
 | `dds.domain` | `0` | DDS domain ID to join |
 | `dds.participant` | executable name | Name of the DDS participant |
 | `dds.device-initialization-timeout-ms` | `5000` | Time a discovered device has to become ready |
+| `dds.query-devices-max` | `5` | Most seconds the first device query on a domain waits for devices to appear (0 = no wait; raised to `query-devices-min` if smaller) |
+| `dds.query-devices-min` | `3` | Least seconds that first device query waits (unless `query-devices-max` is 0) |
 
 Contexts that use the same domain share one DDS participant and one device watcher. Two contexts on different domains each get their own.
 
@@ -86,7 +88,7 @@ The three tools in [`tools/dds`](https://github.com/realsenseai/librealsense/tre
 
 1. Writes `context.dds.enabled = true` into the configuration file if it is not set yet. Skipped with `--transient-sdk-domain-id`.
 2. Finds the one connected camera that supports Ethernet configuration. If more than one camera is found, it stops and asks for `--serial-number`. Recovery-mode devices are refused.
-3. Prints the current settings (MAC address, IP, DDS domain, link speed, MTU, link timeout, priority, DHCP, transmission delay, UDP TTL), with the requested values next to them.
+3. Unless `--quiet` is given, prints the current settings (MAC address, IP, DDS domain, link speed, MTU, link timeout, priority, DHCP, DHCP timeout, transmission delay, UDP TTL), with the requested values next to them.
 4. If anything changed, sends the new configuration to the camera, prints `Successfully changed` and resets the camera, unless `--no-reset` is given.
 
 | Flag | Value | Description |
@@ -106,7 +108,7 @@ The three tools in [`tools/dds`](https://github.com/realsenseai/librealsense/tre
 | `--dhcp-timeout <seconds>` | | Seconds before DHCP gives up and the static IP is used |
 | `--mtu <bytes>` | 500–9000, multiple of 500 | Ethernet packet size the camera sends |
 | `--transmission-delay <microseconds>` | 0–144, multiple of 3 | Wait after each packet before sending the next one |
-| `--ttl <1-255>` | 1–255 | UDP packet TTL field |
+| `--ttl <1-255>` | 0–255 (0 = system default); configuration table v3/v4: 0 only | UDP packet TTL field |
 | `--ip <address>` | IPv4 address | Static IP address, used when DHCP is off |
 | `--mask <1.2.3.4>` | IPv4 address | Static network mask, used when DHCP is off |
 | `--gateway <1.2.3.4>` | IPv4 address | Gateway, used when DHCP is off |
@@ -121,7 +123,7 @@ Rules enforced by the tool:
 - `--usb-first`, `--eth-first` and `--dynamic-priority` are mutually exclusive.
 - `--sdk-domain-id` and `--transient-sdk-domain-id` are mutually exclusive.
 - With `--transient-sdk-domain-id`, the configuration file is not changed to enable DDS. Use it to reach a camera on a domain other than the saved one without saving that domain. With `--disable` as well, DDS is still disabled in the file, but the run goes on and works on the camera.
-- The camera checks the values above. Firmware with an older configuration table accepts only MTU 9000, no transmission delay and no UDP TTL change. The tool then reports "Camera FW supports only MTU 9000.", "Camera FW does not support transmission delay." or "Camera FW does not support changing UDP TTL value." (messages from [`third-party/rsutils/src/eth-config.cpp`](https://github.com/realsenseai/librealsense/blob/development/third-party/rsutils/src/eth-config.cpp)).
+- The values above are checked on the host before the new configuration is sent. If the camera reports configuration table v3, only MTU 9000 and a transmission delay of 0 are allowed; with table v3 or v4, the UDP TTL must be 0. The tool then reports "Camera FW supports only MTU 9000.", "Camera FW does not support transmission delay." or "Camera FW does not support changing UDP TTL value." (messages from [`third-party/rsutils/src/eth-config.cpp`](https://github.com/realsenseai/librealsense/blob/development/third-party/rsutils/src/eth-config.cpp)).
 
 Examples:
 
@@ -135,7 +137,7 @@ rs-dds-config --golden                          # compare current with factory v
 
 ### rs-dds-sniffer
 
-[`rs-dds-sniffer`](https://github.com/realsenseai/librealsense/blob/development/tools/dds/dds-sniffer/rs-dds-sniffer.cpp) watches a DDS domain. It prints every participant and data reader/writer it discovers, with the topic name and type. Without `--snapshot` it runs until stopped, printing `rs-dds-sniffer listening on domain <N> (press Ctrl+C to stop)` first.
+[`rs-dds-sniffer`](https://github.com/realsenseai/librealsense/blob/development/tools/dds/dds-sniffer/rs-dds-sniffer.cpp) watches a DDS domain. It prints every participant and data reader/writer it discovers, with the topic name and type. Without `--snapshot` (also implied by `--participants` and `--topics`) it runs until stopped, first printing `rs-dds-sniffer listening on domain <N> (press Ctrl+C to stop)` (unless `--machine-readable` is given).
 
 | Flag | Description |
 |---|---|
@@ -145,7 +147,7 @@ rs-dds-config --golden                          # compare current with factory v
 | `--debug` | Enable debug logging |
 | `--participants` | Show participants and quit; implies `--snapshot` |
 | `--topics` | Show topics and quit; implies `--snapshot` |
-| `-d`, `--domain <0-232>` | Domain ID to listen on (default 0) |
+| `-d`, `--domain <0-232>` | Domain ID to listen on (default: the configuration file's domain, else 0) |
 | `-r`, `--root <path>` | Filter out anything not inside this root path |
 
 ### rs-dds-adapter
@@ -157,11 +159,11 @@ rs-dds-config --golden                          # compare current with factory v
 | `--domain-id <0-232>` | Domain ID to publish on; values outside 0–232 are rejected. Without it, the domain comes from the configuration file (default 0) |
 | `--debug` | Turn on librealsense debug logs |
 
-On start it prints `Starting RS DDS Adapter on domain <N> ...` and then `Start listening to RS devices..`.
+On start it prints `Starting RS DDS Adapter on domain <N> ...` (`<N>` is -1 when `--domain-id` is not given) and then `Start listening to RS devices..`.
 
 ## Configure the camera's Ethernet settings
 
-Cameras that support Ethernet configuration expose the `RS2_EXTENSION_ETH_CONFIG` extension. In the code at this commit, that is the D555 when connected over USB (`rs555_device` in [`src/ds/d500/d500-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-factory.cpp)), and DDS devices whose name contains `D555` ([`src/dds/rs-dds-device-proxy.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-device-proxy.cpp)). Even then, `rs2_supports_eth_config` returns true only if the configuration can be read from the camera. See [[Supported Devices]] for the device list.
+In the code at this commit, the `RS2_EXTENSION_ETH_CONFIG` extension is exposed by a D555 connected directly over USB or GMSL/MIPI (`rs555_device` in [`src/ds/d500/d500-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-factory.cpp)) and by every DDS device ([`src/dds/rs-dds-device-proxy.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-device-proxy.cpp)). A DDS device reports support only if its name contains `D555`. Even then, `rs2_supports_eth_config` returns true only if the configuration can be read from the camera. See [[Supported Devices]] for the device list.
 
 You have three ways to change the settings:
 
@@ -192,11 +194,11 @@ for( auto && dev : ctx.query_devices() )
 }
 ```
 
-Each setter sends the full configuration to the camera, and the library checks the values first. The domain must be 0–232. The MTU must be 500–9000 in steps of 500. The link timeout must be 2000–30000 ms in steps of 100. The transmission delay must be 0–144 µs in steps of 3.
+Each setter sends the full configuration to the camera, and the library checks the values first. The domain must be 0–232. The MTU must be 500–9000 in steps of 500. The link timeout must be 2000–30000 ms in steps of 100. The transmission delay must be 0–144 µs in steps of 3. The DHCP timeout must be 0–255 s. The configured IP address and network mask must not be 0.0.0.0. If the camera reports configuration table v3, only MTU 9000 and a transmission delay of 0 are allowed; with table v3 or v4, the UDP TTL must be 0.
 
 ### C API reference
 
-The C functions in [`rs_eth_config.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_eth_config.h), in header order. Every function also takes a final `rs2_error ** error` argument. `rs2_ip_address` is `uint8_t[4]`. The C++ class `rs2::eth_config_device` has a method of the same name without the `rs2_` prefix for each (for example `get_mtu()`). The exceptions are `rs2_restore_default_eth_config`, which is `restore_defaults()`, and `rs2_eth_link_priority_to_string`, which is used through `operator<<`.
+The C functions in [`rs_eth_config.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_eth_config.h), in header order. Every function except `rs2_eth_link_priority_to_string` also takes a final `rs2_error ** error` argument. `rs2_ip_address` is `uint8_t[4]`. The C++ class `rs2::eth_config_device` has a method of the same name without the `rs2_` prefix for each (for example `get_mtu()`). The exceptions are `rs2_restore_default_eth_config`, which is `restore_defaults()`, and `rs2_eth_link_priority_to_string`, which is used through `operator<<`.
 
 <!-- wikigen:table-eth-config-api -->
 | Function | Parameters | Returns / description |
@@ -223,7 +225,7 @@ The C functions in [`rs_eth_config.h`](https://github.com/realsenseai/librealsen
 | `rs2_get_transmission_delay` | `const rs2_device * device` | Transmission delay in microseconds |
 | `rs2_set_transmission_delay` | `device`, `unsigned int delay` | Set the transmission delay (0–144 µs, in 3 µs steps) |
 | `rs2_get_udp_ttl` | `const rs2_device * device` | UDP packet TTL |
-| `rs2_set_udp_ttl` | `device`, `unsigned int ttl` | Set the UDP TTL (1–255) |
+| `rs2_set_udp_ttl` | `device`, `unsigned int ttl` | Set the UDP TTL (1–255, or 0 for the system default; with configuration table v3 or v4 only 0 is allowed; values above 255 are truncated to 8 bits, not rejected) |
 | `rs2_restore_default_eth_config` | `const rs2_device * device` | Write the camera's factory (golden) configuration back as the current one |
 <!-- /wikigen:table-eth-config-api -->
 
