@@ -1,4 +1,4 @@
-librealsense ships a set of small console tools next to the RealSense Viewer: they list connected cameras, record and convert recordings, collect frame statistics, read firmware logs, send raw commands to the firmware and benchmark the processing blocks. This page is for developers and support engineers who want to script these tasks or debug a camera without a GUI. It lists every tool in [`tools/`](https://github.com/realsenseai/librealsense/tree/development/tools), how it is built, and every command-line flag its parser accepts.
+librealsense ships a set of small console tools next to the RealSense Viewer: they list connected cameras, record and convert recordings, collect frame statistics, read firmware logs, send raw commands to the firmware and benchmark the processing blocks. This page is for developers and support engineers who want to script these tasks or debug a camera without a GUI. It lists every tool in [`tools/`](https://github.com/realsenseai/librealsense/tree/development/tools) and how it is built, and for each tool covered here it gives every command-line flag its parser accepts.
 
 The graphical tools have their own pages: [[Realsense Viewer Manual]], [[Depth Quality Tool]] and [[Firmware Update]] (`rs-fw-update`). DDS tools for network cameras are covered in [[Ethernet and DDS Cameras]].
 
@@ -14,6 +14,11 @@ The tool list is decided in [`tools/CMakeLists.txt`](https://github.com/realsens
 | `rs-terminal` | `tools/terminal` | `BUILD_TOOLS` | yes |
 | `rs-record` | `tools/recorder` | `BUILD_TOOLS` | yes |
 | `rs-embed` | `tools/embed` | `BUILD_TOOLS` | yes |
+| `rs-fw-update` | `tools/fw-update` | `BUILD_TOOLS` | yes |
+| `rs-dds-sniffer`, `rs-dds-adapter`, `rs-dds-config` | `tools/dds` | `BUILD_TOOLS` and `BUILD_WITH_DDS` | no |
+| `realsense-viewer` | `tools/realsense-viewer` | `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` | yes |
+| `rs-depth-quality` | `tools/depth-quality` | `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` | yes |
+| `rs-imu-calibration.py` | `tools/rs-imu-calibration` | not built (Python script) | n/a |
 | `rs-data-collect` | `tools/data-collect` | `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` | yes |
 | `rs-rosbag-inspector` | `tools/rosbag-inspector` | `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` | yes |
 | `rs-benchmark` | `tools/benchmark` | `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` | yes |
@@ -25,17 +30,17 @@ The tool list is decided in [`tools/CMakeLists.txt`](https://github.com/realsens
 
 Most tools parse their arguments with `rs2::cli` from [`common/cli.h`](https://github.com/realsenseai/librealsense/blob/development/common/cli.h), a wrapper around TCLAP. The tools use it at three levels:
 
-- `rs2::cli` (used by `rs-convert`, `rs-enumerate-devices`, `rs-terminal`, `rs-record`, `rs-data-collect`, `rs-benchmark`) adds `--debug` and the DDS flags `--eth`, `--eth-only`, `--no-eth`, `--domain-id`.
-- `rs2::cli_no_dds` (used by `rs-fw-logger`) adds only `--debug`.
-- `rs-embed` uses plain TCLAP and has none of the shared flags.
+- `rs2::cli` (used by `rs-convert`, `rs-enumerate-devices`, `rs-terminal`, `rs-record`, `rs-data-collect`, `rs-benchmark`, `rs-fw-update`, `realsense-viewer`, `rs-depth-quality`) adds `--debug` and the DDS flags `--eth`, `--eth-only`, `--no-eth`, `--domain-id`.
+- `rs2::cli_no_dds` (used by `rs-fw-logger`, `rs-dds-config`, `rs-dds-adapter`) adds only `--debug`.
+- `rs-embed` and `rs-dds-sniffer` use plain TCLAP and have none of the shared flags (`rs-dds-sniffer` defines its own `--debug`).
 
 Every TCLAP parser also registers `-h`/`--help`, `--version` and `--`/`--ignore_rest`. With `rs2::cli`, `--version` prints the librealsense version (`RS2_API_FULL_VERSION_STR`).
 
 Notes on the shared flags:
 
-- `--debug` exists only when the library is built with `BUILD_EASYLOGGINGPP` (default `ON`). Without it, the tools log `ERROR` messages to the console; with it, they log `DEBUG` messages.
+- `--debug` exists only when the library is built with `BUILD_EASYLOGGINGPP` (default `ON`). Without it, the tools log `ERROR` messages to the console (`WARN` for `rs-convert`, `rs-data-collect` and `rs-fw-update`); with it, they log `DEBUG` messages.
 - The DDS flags are always accepted, but they only take effect when librealsense is built with `BUILD_WITH_DDS` (default `OFF`). In a DDS build, `--eth`, `--eth-only` and `--no-eth` are mutually exclusive, `--domain-id` cannot be combined with `--no-eth`, and `--domain-id` must be in the range 0–232.
-- The parsed settings are passed to the `rs2::context` (or `rs2::pipeline`) that the tool creates.
+- The parsed settings are passed to the `rs2::context` (or `rs2::pipeline`) that the tool creates. Exception: `rs-convert` passes them only for `-D` and PLY output; its other converters use a default `rs2::context`.
 
 ## Listing devices: rs-enumerate-devices
 
@@ -48,7 +53,7 @@ rs-enumerate-devices -p rec.db3  # enumerate a recording as a playback device
 ```
 
 - `-s` and `-S` print a table with Device Name, Serial Number and Firmware Version. `-S` also prints the full camera info of each device. Both turn off the stream modes, options and calibration output. If you combine them with `-o` or `-c`, the tool prints a warning that those flags are ignored.
-- `-d` prints the default streams only when the stream modes are not printed, i.e. together with `-s` or `-S`.
+- `-d` marks the default profiles with `+` in the stream mode list; together with `-s` or `-S` (no mode list), it prints a separate list of the default streams instead.
 - This tool sets DDS discovery itself: it is on unless `--no-eth` is given (in a DDS build).
 - With `--sw-only` the tool lists only software devices (playback, DDS) and retries for about 3 seconds if none is found yet.
 - If no device is found, it prints `No device detected. Is it plugged in?` and exits with failure.
@@ -215,7 +220,7 @@ rs-fw-logger -s <serial> -l events.xml -o fw_log.txt
 
 - one command with `-s`;
 - a script file with `-r` (hex lines) or `-c` (named commands, needs `-l`);
-- an interactive prompt (`#>`) with auto-completion, where `next` switches to the next connected device and `exit` quits.
+- an interactive prompt (`#>`) with auto-completion, where commands go to the selected devices, `next` waits for a device from the device hub (commands still go to the selected devices) and `exit` quits.
 
 Source: [`tools/terminal/rs-terminal.cpp`](https://github.com/realsenseai/librealsense/blob/development/tools/terminal/rs-terminal.cpp).
 
