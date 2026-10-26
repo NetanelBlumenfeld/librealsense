@@ -16,7 +16,7 @@ The D500 device classes are created in [`d500-factory.cpp`](https://github.com/r
 
 Two features depend on the camera interface and firmware:
 
-- **Depth mapping** is added only when the camera exposes the mapping interface. If it does not, the SDK logs `depth mapping device not found (expected 1, found N) - occupancy/point-cloud streams will not be available` and creates the device without these streams ([`d500-depth-mapping.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-depth-mapping.cpp)). A code comment there says older firmware is the usual reason.
+- **Depth mapping** is added only when the camera exposes the mapping interface. If it does not, the SDK logs `depth mapping device not found (expected 1, found N) - occupancy/point-cloud streams will not be available` and creates the device without these streams ([`d500-depth-mapping.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-depth-mapping.cpp)). A code comment there says older firmware is the usual reason. In v2.59.1 depth mapping is also never added on MIPI/GMSL cameras *(changed in the next release)*.
 - **Object detection** is added only when the camera exposes the object detection interface. Otherwise the SDK logs `Object detection interface not present - sensor not created` ([`d500-object-detection.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-object-detection.cpp)).
 
 Object detection can also come from a network (DDS) camera. When a DDS device publishes a stream of type `object_detection`, librealsense creates a perception sensor for it and converts the received JSON detections into object detection frames ([`rs-dds-device-proxy.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-device-proxy.cpp), [`rs-dds-sensor-proxy.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-sensor-proxy.cpp)). The DDS path does not provide the safety, occupancy or labeled point cloud streams. See [[Ethernet and DDS Cameras]].
@@ -34,7 +34,7 @@ Object detection can also come from a network (DDS) camera. When a DDS device pu
 Notes from the code:
 
 - `RS2_STREAM_POINT_CLOUD` is added to the depth mapping streams on every D500 device with depth mapping except `RealSense D585S` and the `RealSense D585` with PID `0x0B6A` (`add_streams_if_active()` in `d500-depth-mapping.cpp`).
-- The depth mapping sensor sends one mapping stream at a time (`d500_depth_mapping_sensor::open()`).
+- Except on `RealSense D585S` and the `RealSense D585` with PID `0x0B6A`, the depth mapping sensor sends one mapping stream at a time. On every device that has `RS2_STREAM_POINT_CLOUD`, that stream cannot start while the depth sensor is streaming (`Point Cloud cannot start while Depth is streaming; stop Depth first`) (`d500_depth_mapping_sensor::open()`) *(new in the next release)*.
 - The `Y8` format on the safety, labeled point cloud and object detection streams is a transport format. Read these frames through the frame classes below, not as images.
 
 ## Streaming the labeled point cloud
@@ -67,7 +67,7 @@ From C, use `rs2_get_frame_labeled_points_count()`, `rs2_get_frame_labeled_verti
 
 ### The rs-labeled-pointcloud example
 
-[`examples/labeledpointcloud`](https://github.com/realsenseai/librealsense/tree/development/examples/labeledpointcloud) builds `rs-labeled-pointcloud`. It is built only with `BUILD_GRAPHICAL_EXAMPLES` (see [[Build Configuration]]). The program:
+[`examples/labeledpointcloud`](https://github.com/realsenseai/librealsense/tree/development/examples/labeledpointcloud) builds `rs-labeled-pointcloud`. It is built only when both `BUILD_EXAMPLES` and `BUILD_GRAPHICAL_EXAMPLES` are on (see [[Build Configuration]]). The program:
 
 1. opens an OpenGL window titled `RealSense Pointcloud Example`;
 2. enables `RS2_STREAM_LABELED_POINT_CLOUD` in an `rs2::config` and starts an `rs2::pipeline`;
@@ -117,7 +117,7 @@ On every other D500 device with depth mapping, the SDK checks that the camera ca
 
 ### Depth mapping parameters *(new in the next release)*
 
-`rs2::depth_mapping_sensor` reads and writes the occupancy grid and labeled point cloud parameters as JSON:
+`rs2::depth_mapping_sensor` reads and writes the occupancy grid and labeled point cloud parameters as JSON. On `RealSense D585S` both calls fail with `Depth mapping params are not supported on this device`:
 
 ```cpp
 for( auto && s : dev.query_sensors() )
@@ -188,7 +188,7 @@ for( unsigned int i = 0; i < n; ++i )
 
 An index outside the detection count fails with `index <i> is out of range (<count>)` ([`rs.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/rs.cpp)). The center-of-mass fields (`world_position`, `center_of_mass_x`, `center_of_mass_y`) are valid only when `center_of_mass_valid` is nonzero; firmware that does not report a center of mass gives `center_of_mass_valid = 0` and zero values.
 
-On D500 USB/MIPI cameras with firmware `7.58.40802.12738` or newer, the `Perception` sensor also has `RS2_OPTION_DETECTION_DISTANCE`, which turns on the firmware calculation of the per-detection distance (the `depth` field).
+On D500 USB/MIPI cameras that have a `Perception` sensor and firmware `7.58.40802.12738` or newer, that sensor also has `RS2_OPTION_DETECTION_DISTANCE`, which turns on the firmware calculation of the per-detection distance (the `depth` field).
 
 `rs2::object_detection_frame` derives from `rs2::perception_frame`. Both check the frame type in their constructor and are empty (false) when the frame is not of that type.
 
@@ -232,6 +232,7 @@ The safety sensor registers these options:
 | `RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX` | `Safety Preset Active Index` |
 | `RS2_OPTION_SAFETY_MODE` | `Safety camera operational mode`: `Run`, `Standby`, `Service` (`rs2_safety_mode`) |
 | `RS2_OPTION_SAFETY_MCU_TEMPERATURE` | `Temperature reading for Safety MCU` |
+| `RS2_OPTION_GLOBAL_TIME_ENABLED` | `Enable/Disable global timestamp` |
 
 Safety frames carry many `RS2_FRAME_METADATA_SAFETY_*` fields, for example `RS2_FRAME_METADATA_SAFETY_LEVEL1`, `RS2_FRAME_METADATA_SAFETY_LEVEL2` and `RS2_FRAME_METADATA_SAFETY_PRESET_ID_USED`. The full list is in `register_metadata()` in `d500-safety.cpp`, with descriptions in [`rs_frame.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_frame.h).
 
