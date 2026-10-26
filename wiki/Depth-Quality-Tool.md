@@ -13,7 +13,7 @@ The tool is built by CMake target `rs-depth-quality` in [`tools/depth-quality/CM
 | `BUILD_EXAMPLES` | `ON` | The top-level `CMakeLists.txt` adds the `tools` directory when this is on; [`tools/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/tools/CMakeLists.txt) adds the graphical tools only inside its `BUILD_EXAMPLES` block. |
 | `BUILD_GRAPHICAL_EXAMPLES` | `ON` | Adds `depth-quality` (together with the Viewer and other graphical tools). It turns `BUILD_GLSL_EXTENSIONS` on if it was off. |
 
-`BUILD_TOOLS` does not control this tool: it only adds the non-graphical tools (`convert`, `enumerate-devices`, `fw-logger`, `terminal`, `recorder`, `fw-update`, `embed`). See [[Build Configuration]] for all options.
+`BUILD_TOOLS` does not control this tool: it only adds the non-graphical tools (`convert`, `enumerate-devices`, `fw-logger`, `terminal`, `recorder`, `fw-update`, `embed`, and `dds` when `BUILD_WITH_DDS` is on). See [[Build Configuration]] for all options.
 
 Example configure and build from the repository root:
 
@@ -46,6 +46,7 @@ The window title is "Depth Quality Tool". If no device is connected, the tool do
 | `--domain-id` | `0-232` | Domain ID to use with DDS devices (default `0`). Ignored when not built with DDS support. |
 | `-h`, `--help` | none | Display usage information and exit. |
 | `--version` | none | Display version information and exit. |
+| `--`, `--ignore_rest` | none | Ignore the rest of the labeled arguments after this flag. |
 
 With `BUILD_WITH_DDS` (default `OFF`), `--eth`, `--eth-only` and `--no-eth` are mutually exclusive, `--domain-id` cannot be combined with `--no-eth`, and `--domain-id` outside `[0, 232]` is rejected. See [[Ethernet and DDS Cameras]].
 
@@ -163,11 +164,11 @@ The RMS of the point-to-plane distances (spatial noise), shown as a percentage o
 3. For each point, `err_i = offset_mm + 1000 × dist_i`.
 4. `Z Accuracy = 100 × median(err_i) / GT` (the median is the element at index `n / 2` of the sorted errors).
 
-A positive value means the plane fit is further than the ground truth; a negative value means it is in front of it. Z Accuracy is enabled only while **Ground Truth** is ticked with a non-zero value.
+A positive value means the plane fit is further than the ground truth; a negative value means it is in front of it. Z Accuracy is enabled only while **Ground Truth** is ticked with a positive value.
 
 ### Temporal Noise
 
-The tool keeps a FIFO of the valid ROI pixels of recent analysed frames (`NUM_IMAGES = 40`; once the FIFO reaches 40 frames the oldest is dropped, so each computation uses the latest 39 frames). Then, for each ROI pixel:
+The tool keeps a FIFO of the valid ROI pixels of recent analysed frames in which a plane was reported as found (`NUM_IMAGES = 40`; once the FIFO reaches 40 frames the oldest is dropped, so each computation uses the latest 39 frames). Then, for each ROI pixel:
 
 1. Collect its depth values (mm) over the frames in the FIFO, leaving out frames where it had no depth.
 2. `STD(x, y)` = standard deviation of those values (dividing by the number of values), `Median(x, y)` = their median.
