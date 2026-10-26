@@ -4,7 +4,7 @@ Advanced mode exposes the low-level parameters of the depth-from-stereo engine o
 
 A device supports advanced mode when it can be extended to `rs400::advanced_mode` (C: `rs2_is_device_extendable_to(dev, RS2_EXTENSION_ADVANCED_MODE, ...)`). In the library this is every device class that derives from `ds_advanced_mode_base`:
 
-- most D400 device classes in [`src/ds/d400/d400-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-factory.cpp). Not all of them: for example `rs401_gmsl_device`, `rs415_gmsl_device`, `rs430_gmsl_device` and `rs457_device` do not derive from it;
+- all D400 device classes in [`src/ds/d400/d400-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-factory.cpp). The MIPI/GMSL classes (`rs401_gmsl_device`, `rs415_gmsl_device`, `rs430_gmsl_device`, `rs457_device`) derive from it through `d400_mipi_device`;
 - the D500 device classes in [`src/ds/d500/d500-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-factory.cpp);
 - DDS (Ethernet) device proxies in [`src/dds/rs-dds-device-proxy.h`](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-device-proxy.h), see [[Ethernet and DDS Cameras]].
 
@@ -112,7 +112,7 @@ In Python, `rs400_advanced_mode` and `serializable_device` both have `serialize_
 Behaviour of the advanced-mode implementation ([`advanced_mode.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/advanced_mode/advanced_mode.cpp)):
 
 - Both calls require advanced mode to be enabled. Otherwise they throw "serialize_json() failed! Device is not in Advanced-Mode." or "load_json(...) failed! Device is not in Advanced-Mode.".
-- `load_json` starts from the device's current values and changes only the keys present in the file, then sets the visual preset option to **Custom**.
+- `load_json` starts from the device's current values and changes only the keys present in the file, then sets the visual preset option to **Custom** (not on DDS devices, where advanced mode does not register that option).
 - A key the device does not know makes `load_json` throw "*KEY* key is not supported by the connected device!".
 
 ### JSON file format
@@ -139,7 +139,7 @@ Every device that supports `serializable_device` gets a preset panel in the View
 - the **Save** icon ("Save current device settings to file") calls `serialize_json`, adds a `"viewer"` section with Viewer settings, and writes a `.json` file;
 - files you loaded or saved are added to the preset drop-down so you can select them again.
 
-If the device supports advanced mode but it is off, the icons ask whether to turn it on first ("To use this feature, the device must be in Advanced Mode.").
+If the device supports advanced mode but it is off, the Save icon (and the Load icon, except on D500 devices) asks whether to turn it on first ("To use this feature, the device must be in Advanced Mode.").
 
 ## Reading and writing control groups
 
@@ -147,7 +147,7 @@ Each control group is a plain C struct from [`include/librealsense2/h/rs_advance
 
 - the getters take a `mode`: `0` returns the current values, `1` the minimum values, `2` the maximum values. In C++ and Python `mode` defaults to `0`;
 - the setters write the whole struct, so read the current values first, change the fields you need, and write the struct back;
-- every successful setter sets the visual preset option (when it is registered) to **Custom**.
+- every setter that writes to the device sets the visual preset option (when it is registered) to **Custom**.
 
 ```cpp
 auto adv = dev.as<rs400::advanced_mode>();
@@ -181,7 +181,7 @@ dc["scoreThreshA"] = 10
 adv["depth_control"] = dc
 ```
 
-In Python, the `STAFactor` field is named `a_factor` (C/C++: `amplitude`).
+In Python, the `STAFactor` field is named `a_factor` (C/C++: `amplitude`). Some `STAdvancedModeControls` members (from `get_all_controls()`) have different names in Python: `rau_support_vector_control`, `rau_thresholds_control`, `slo_color_thresholds_control`, `slo_penalty_control`, `color_correction` and `ae_control` (C/C++: `rsvc`, `rctc`, `sctc`, `spc`, `cc`, `ae`). Each member is a list of 3. The struct supports `keys()` and `["name"]`, but you cannot assign to it.
 
 ## Control group reference
 
