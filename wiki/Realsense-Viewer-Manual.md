@@ -121,7 +121,7 @@ The Settings dialog has up to four tabs:
 
 **Online Services** *(only in builds with libcurl)*
 * **SW/FW Updates From Server** *(only in builds with update-checking enabled)* — **Official Server** / **Custom Server** radio buttons, with a text field for the custom URL.
-* **Real User Monitoring (RUM)** *(only in builds with usage statistics enabled)* — **Enable anonymous cloud upload** checkbox and an **Export RUM data...** button. See [[Usage Statistics RUM]].
+* **Real User Monitoring (RUM)** *(only in builds with usage statistics enabled)* — **Enable anonymous cloud upload** checkbox, an **Export RUM data...** button, and an **Upload now** button (enabled once cloud upload is applied). See [[Usage Statistics RUM]].
 
 The dialog closes with **OK** (save and close), **Apply** (save, stay open), or **Cancel** (discard changes).
 
@@ -144,7 +144,7 @@ Each connected device's panel header shows a row of icon buttons:
 * **Advanced Mode** — toggles [Advanced Mode](#advanced-mode) (disabled while streaming; not available on D500 devices). Once enabled, the setting is stored in the device's flash and survives a camera reset.
 * **Hardware Reset** — resets the device.
 * **Switch to Dual-RGB Mode** / **Switch to Dedicated-RGB Mode** — for D5x5 SKUs that support both a dedicated color sensor (3C) and dual-RGB configuration (2C); requires a hardware reset and the device re-enumerating under a different PID (`RS2_OPTION_SENSORS_CONFIG_MODE`).
-* **Update Firmware** — opens the firmware-update flow using a `.bin` image you select.
+* **Update Firmware** — opens the firmware-update flow using a `.bin` or `.img` image you select.
 * **Check For Updates** — checks the update server for newer firmware/software.
 * **Update Unsigned Firmware...** *(D400 only)* — flashes an unsigned/development firmware image.
 * **DDS Configuration** *(Ethernet-connected devices)* — network configuration dialog.
@@ -167,19 +167,19 @@ Frequently used options are shown directly under Stream Selection without needin
 
 ### Controls search box
 
-Expanding a sensor's **Controls** section reveals every additional option the connected sensor and firmware report as supported (see the [Sensor Options Reference](#sensor-options-reference) below for what each one does), together with a text box hinting **"Search controls..."**.
+Expanding a sensor's **Controls** section reveals every additional option the connected sensor and firmware report as supported (see the [Sensor Options Reference](#sensor-options-reference) below for what each one does). A text box hinting **"Search controls..."** sits just above that section.
 
-**This is the fastest way to find a specific control by name:** type any part of the control's name (case-insensitive) and the list live-filters to matching options only; clearing the box restores the full list. Color-image-specific options (Backlight compensation, Brightness, Contrast, Gamma, Hue, Saturation, Sharpness, White balance, Enable auto white balance) are always sorted to the end of the list.
+**This is the fastest way to find a specific control by name:** type any part of the control's name (case-insensitive) and the Controls, Advanced Controls and filter sections live-filter to matching options only; clearing the box restores the full list. Color-image-specific options (Backlight compensation, Brightness, Contrast, Gamma, Hue, Saturation, Sharpness, White balance, Enable auto white balance) are always sorted to the end of the list.
 
-If the device supports [Advanced Mode](#advanced-mode), an **Advanced Controls** section appears below **Controls**; until Advanced Mode is turned on it shows a **Turn on Advanced Mode** button instead.
+If the device supports [Advanced Mode](#advanced-mode), an **Advanced Controls** section appears below the depth sensor's **Controls**. Until Advanced Mode is turned on, it shows a **Turn on Advanced Mode** button instead (a notice while streaming, or on D500 devices).
 
 ### Streaming toggle
 
-Each sensor section has an on/off toggle button that starts or stops streaming from that sensor. It is disabled (with an explanatory tooltip) when a dependent stream needs to be started first (object detection needs a Color stream), or, on GMSL devices, while the Infrared streams that share the perception channel are running.
+Each sensor section has an on/off toggle button that starts or stops streaming from that sensor. It is disabled (with an explanatory tooltip) when a dependent stream needs to be started first (object detection needs a Color stream), or, on GMSL devices, while the Infrared streams that share the perception channel are running *(changed in the next release)*. In v2.59.1 an object detection stream instead needed both Color and Depth streaming, and could not start while a decimation/temporal embedded filter was enabled.
 
 ## Sensor Options Reference
 
-The options below are the raw sensor/firmware controls surfaced through `rs2_option` (`include/librealsense2/h/rs_option.h`). The Viewer displays a control's name and description exactly as reported by the connected sensor (`rs2_get_option_name` / `rs2_get_option_description`), so the exact set of controls you see depends on your specific camera model and firmware version — not every option below will appear on every device. Options are rendered as sliders, checkboxes, or dropdowns (for enumerated options) inside each sensor's **Controls** / **Advanced Controls** section, and can always be located with the [Controls search box](#controls-search-box).
+The options below are the raw sensor/firmware controls surfaced through `rs2_option` (`include/librealsense2/h/rs_option.h`). The Viewer displays a control's name and description exactly as reported by the connected sensor (`rs2_get_option_name` / `rs2_get_option_description`), so the exact set of controls you see depends on your specific camera model and firmware version — not every option below will appear on every device. Options are rendered as sliders, checkboxes, or dropdowns (for enumerated options) inside each sensor's **Controls** / **Advanced Controls** section, and can be located with the [Controls search box](#controls-search-box). The Viewer hides Stream filter, Stream format filter, Stream index filter, Frames queue size, Noise estimation, Region of Interest, Readout shaping and Enable IR Reflectivity from the Controls list. Enable aligned depth is drawn under Stream Selection, and Sensors config mode is shown as the Dual-RGB / Dedicated-RGB entry in the [device "More" menu](#device-more-menu).
 
 ### Color / RGB image controls
 
@@ -214,7 +214,7 @@ The options below are the raw sensor/firmware controls surfaced through `rs2_opt
 | Auto gain limit | Caps the auto-exposure gain (16–248, clamped to that range). Takes effect on the next streaming session. |
 | Auto gain limit toggle | Enable / disable the color image auto-gain limit. |
 | Fisheye Auto Exposure Mode | Auto-exposure mode for fisheye (tracking-camera) sensors: Static, Anti-Flicker, or Hybrid. |
-| Auto Exposure Mode (depth) | Depth-sensor auto-exposure algorithm: Regular or Accelerated. |
+| Auto Exposure Mode (depth) | Depth-sensor auto-exposure algorithm: Regular or Accelerated; on colored-IR devices, the AE policy: Auto, Depth Priority, Color Priority, or Hybrid. |
 | Receiver Gain | Exposure time of the Avalanche Photo Diode in the receiver (L500). |
 | Auto RX sensitivity | Enables receiver sensitivity to auto-adjust with ambient light, bounded by the Receiver Gain control. |
 | Dual RGB enable auto exposure *(new in the next release)* | D585 dual-RGB (2C): enable / disable auto-exposure of the RGB cameras, independent of the depth auto-exposure. |
@@ -361,12 +361,12 @@ The following are retained for backward compatibility and should not be used in 
 
 ## Post-Processing & Embedded Filters
 
-Each depth sensor's section has a **Post-Processing** tree listing every filter the SDK recommends for that sensor (e.g. Decimation, Threshold, Spatial, Temporal, Hole Filling, Rotation, Sequence ID, HDR Merge), each with its own enable/disable toggle button and, when expanded, its own option sliders. A separate **Embedded-Filters** tree lists the equivalent firmware/hardware-side filters (e.g. embedded decimation, temporal, and close-range filters) reported by the device, each with the same enable/disable pattern.
+Each sensor's section that has filters (such as the depth and color sensors) has a **Post-Processing** tree listing every filter the SDK recommends for that sensor (e.g. Decimation, Threshold, Spatial, Temporal, Hole Filling, Rotation, Sequence ID, HDR Merge), each with its own enable/disable toggle button and, when expanded, its own option sliders. A separate **Embedded-Filters** tree lists the equivalent firmware/hardware-side filters (e.g. embedded decimation, temporal, and close-range filters) reported by the device, each with the same enable/disable pattern.
 
 For what each filter algorithm actually does — including exact parameter ranges and defaults — see [[Post Processing Filters]], which covers the Decimation, Spatial Edge-Preserving, Temporal, Holes Filling, and Rotation filters in detail.
 
 Two additional filters are build-specific:
-* **Improved Close Range Depth** — **this is the control to use for improving minimum sensing distance (min-Z)**: the closest distance at which a stereo depth camera can still produce valid depth. Regular stereo cameras bottom out around ~12 cm and short-range cameras (D401, D405) around ~2 cm; enabling this filter lowers that floor without any firmware or SDK changes. It is only available in builds with `BUILD_WITH_CLOSE_RANGE_DEPTH`, and is greyed out with the tooltip "Improved Close Range Depth library not found; install librealsense2-enhanced-depth package" when the native library isn't present, or "Improved Close Range Depth requires CUDA (not detected on this system)" when CUDA isn't available. The threshold is computed automatically from the camera's calibration (focal length × baseline / 105); to override that computed value or use the improver outside the Viewer, see [examples/enhanced-depth-range/README.md](https://github.com/realsenseai/librealsense/blob/development/examples/enhanced-depth-range/README.md), which documents its `min_z_threshold_mm` / `min_z_threshold` parameter.
+* **Improved Close Range Depth** — **this is the control to use for improving minimum sensing distance (min-Z)**: the closest distance at which a stereo depth camera can still produce valid depth. According to examples/enhanced-depth-range/README.md, it improves min-Z (regular stereo cameras reach ~12 cm, while short-range cameras such as D401 and D405 can reach up to ~2 cm) and requires no camera firmware or SDK changes. It is only available in builds with `BUILD_WITH_CLOSE_RANGE_DEPTH`, and is greyed out with the tooltip "Improved Close Range Depth library not found; install librealsense2-enhanced-depth package" when the native library isn't present, or "Improved Close Range Depth requires CUDA (not detected on this system)" when CUDA isn't available. The threshold is computed automatically from the camera's calibration (focal length × baseline / 105, according to examples/enhanced-depth-range/README.md); to override that computed value or use the improver outside the Viewer, see [examples/enhanced-depth-range/README.md](https://github.com/realsenseai/librealsense/blob/development/examples/enhanced-depth-range/README.md), which documents its `min_z_threshold_mm` / `min_z_threshold` parameter.
 * **Face Detection : OpenVINO** — only available in OpenVINO-enabled builds, attached to the RGB sensor.
 
 There is no separate "reorder filters" or "reset all filters" control — filters run in the SDK-recommended insertion order, and each filter's parameters are reset individually from within that filter's own controls.
@@ -384,7 +384,7 @@ A related control, **Set ROI**, appears next to **Enable auto exposure** on ROI-
 
 ## Advanced Mode
 
-Advanced Mode exposes low-level ASIC/algorithm registers on D400-family devices, beyond the normal sensor options. It is toggled from the device's ["More" menu](#device-more-menu) (or via the **Turn on Advanced Mode** button shown in place of the **Advanced Controls** section until enabled) — see the screenshot below. The setting is stored on the device's flash and persists across camera resets.
+Advanced Mode exposes low-level ASIC/algorithm registers on D400 and D500 family devices, beyond the normal sensor options. On D400 devices it is toggled from the device's ["More" menu](#device-more-menu) (or via the **Turn on Advanced Mode** button shown inside the **Advanced Controls** section until enabled); D500 devices cannot toggle it — see the screenshot below. The setting is stored on the device's flash and persists across camera resets.
 
 <p align="center"><img src="https://raw.githubusercontent.com/wiki/realsenseai/librealsense/res/viewer-advanced-mode.png" width="50%" /></p>
 
@@ -416,15 +416,14 @@ Reached from the device's ["More" menu](#device-more-menu).
 * **On-Chip Calibration**
 * **Focal Length Calibration** *(disabled on D421)*
 * **Tare Calibration**
-* **UV-Mapping Calibration** — improves UV-mapping accuracy against a specific calibration target.
 * **Calibration Data**
 * **Recover Logs from Flash**
 
 **D500 devices:**
 * **On-Chip Calibration**
-* **Dry Run On-Chip Calibration**
-* **Focal Length Calibration**
-* **Tare Calibration**
+* **Dry Run On-Chip Calibration** *(not on D555)*
+* **Focal Length Calibration** *(D555 only)*
+* **Tare Calibration** *(D555 only)*
 * **Calibration Data**
 
 If a device supports no auto-calibration at all, the menu shows greyed-out **On-Chip Calibration** and **Tare Calibration** entries.
@@ -460,7 +459,7 @@ The 3D view's header bar has the following controls:
 | **Lock / Unlock** | Locks or unlocks the point cloud and texture data together. |
 | **Source** | Opens a dropdown to pick which depth stream feeds the point cloud. |
 | **Texture** | Opens a dropdown to pick which stream textures the point cloud. |
-| **Shading** | Opens a dropdown: Raw Point-Cloud, Flat-Shaded Mesh, or With Diffuse Lighting (the last two require GLSL rendering, see [Settings dialog](#settings-dialog)). |
+| **Shading** | Opens a dropdown: Raw Point-Cloud, Flat-Shaded Mesh, or With Diffuse Lighting (the last one requires GLSL rendering, see [Settings dialog](#settings-dialog)). |
 | **Measure** | Toggles the [Measurement Tool](#measurement-tool) on/off (requires GLSL rendering and processing to be enabled). |
 | **Export** | Opens the export dialog (see below); disabled if there's no point-cloud data yet. |
 | **Point Size** | Only shown for Labeled Point Cloud data: Small / Medium / Large. |
@@ -485,7 +484,7 @@ Enabled/disabled via the **Measure** button in the [3D viewer toolbar](#3d-point
 * Clicking two points measures the **distance** between them.
 * Holding **Shift** while clicking additional points extends the chain into a polygon, so the tool reports an enclosed **area** instead of a single distance.
 
-Distances and areas are shown as floating labels and connecting rulers in the unit system selected under Settings → General → **Units of Measurement**.
+Distances and areas are shown as floating labels and connecting rulers; distances use the unit system selected under Settings → General → **Units of Measurement**, while areas are always shown in square meters (labelled "m").
 
 ## Recording & Playback
 
@@ -506,7 +505,7 @@ Distances and areas are shown as floating labels and connecting rulers in the un
 | **F8** | Toggle fullscreen. |
 | **W / A / S / D** | Dolly the 3D camera forward / left / back / right. |
 | **R** | Reset the 3D camera to its default pose. |
-| **Space** | Pause/resume all streaming (unless Space activates a focused widget). |
+| **Space** | Pause/resume all streaming (unless Space activates a focused widget) *(changed in the next release)*. In v2.59.1, Space always pauses/resumes, even when a widget has focus. |
 | **Ctrl + left-drag** (mouse) | Pan the 3D view (alternate to middle/right-drag). |
 | **Shift** (held while clicking, in the Measurement Tool) | Chain more than 2 points to measure an area instead of a distance. |
 | **Z** (in the Measurement Tool) | Undo the last measurement change. |
