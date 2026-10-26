@@ -7,7 +7,7 @@ Improved Close Range Depth fills in depth for objects that are closer to the cam
 | Where it runs | In the camera firmware (an embedded filter on the depth sensor) | On the host, on the IR left, IR right and depth frames |
 | Exposed as | Composite option `RS2_COMPOSITE_OPTION_HDRD_CONTROL` with the `rs2_hdrd_control` struct ([`rs_hdrd_control.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_hdrd_control.h)) | Separate package `librealsense2-enhanced-depth`, loaded from `/opt/librealsense2-enhanced-depth` |
 | Used by | Your application through the C, C++ or Python API; the RealSense Viewer embedded-filter editor | [`examples/enhanced-depth-range`](https://github.com/realsenseai/librealsense/tree/development/examples/enhanced-depth-range); the RealSense Viewer when built with `BUILD_WITH_CLOSE_RANGE_DEPTH` |
-| Devices | D500-series devices that register the control (see [Devices with the on-camera control](#devices-with-the-on-camera-control)) | Any depth sensor whose IR left, IR right and depth streams can run at the same resolution |
+| Devices | D500-series devices that register the control (see [Devices with the on-camera control](#devices-with-the-on-camera-control)) | Depth sensors that stream IR left, IR right and depth at the same resolution (the examples request 1280x720); the Viewer filter is further limited to non-color sensors that support `RS2_OPTION_STEREO_BASELINE`, a CUDA device detected at run time, and VGA (640x480) or higher |
 
 ## Enable the on-camera control
 
@@ -35,7 +35,7 @@ for( auto && ef : depth.query_embedded_filters() )
 }
 ```
 
-`get_composite_option_as<T>()` and `set_composite_option_from()` live in [`rs_options.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_options.hpp). They check that the payload size matches `sizeof(T)` and that `header.version` equals `DPP_HEADER_CURRENT_VERSION` (1). If not, they throw. A struct whose header was left zero-initialized is therefore rejected, so always start from a value read from the device.
+`get_composite_option_as<T>()` and `set_composite_option_from()` live in [`rs_options.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_options.hpp). The get helpers check that the payload size matches `sizeof(T)`. Both get and set check that `header.version` equals `DPP_HEADER_CURRENT_VERSION` (1). If not, they throw. A struct whose header was left zero-initialized is therefore rejected, so always start from a value read from the device.
 
 To read the supported limits, use the range struct:
 
@@ -102,7 +102,7 @@ The control is registered by `hdrd_filter_feature` ([`hdrd-filter-feature.cpp`](
 | RealSense D535, RealSense D535F, RealSense D585, RealSense D585F, RealSense D585 Prototype | USB: 7.58.45911.14188; MIPI: 7.58.46315.15221 |
 | RealSense D585 (D585S without the safety function) | USB: 7.58.45911.14188; MIPI: 7.58.46315.15221 |
 
-RealSense D585S does not register the control. Registration on MIPI (GMSL) connections for the D535/D585 classes is *(changed in the next release)*. At v2.59.1 those classes registered it over USB only.
+RealSense D585S does not register the control. MIPI (GMSL) registration for the D535/D585 rows above is *(changed in the next release)*. At v2.59.1 the Dual RGB devices and the RealSense D535, D535F, D585, D585F and D585 Prototype registered it over USB only, while the RealSense D585 (D585S without the safety function) registered it on any connection from firmware 7.58.45911.14188.
 
 On MIPI, the firmware cannot report the control's range. The SDK returns a built-in table instead: min `{0, 0, 1, 0, 0, 0, 0}`, max `{1, 1, 2, 2, 256, 2, 65535}`, step 1, default `{0, 0, 1, 0, 126, 1, 0}`, in field order. On USB, the range comes from the firmware.
 
@@ -110,7 +110,7 @@ A control can be registered and still fail on a given device or firmware. [`pyte
 
 ## Host-side library: run the examples
 
-[`examples/enhanced-depth-range`](https://github.com/realsenseai/librealsense/tree/development/examples/enhanced-depth-range) holds three demos. Each streams IR left, IR right and depth, runs the host-side close-range improver on every frame, and reports how many close-range pixels it recovered. They need the separately distributed `librealsense2-enhanced-depth` package, installed under `/opt/librealsense2-enhanced-depth`. See the [examples README](https://github.com/realsenseai/librealsense/blob/development/examples/enhanced-depth-range/README.md) for how to obtain it. The improver's API (`rs_depth` in Python, `rs_depth_range.h` / `rs_depth_calibration.hpp` in C++) comes from that package, not from librealsense.
+[`examples/enhanced-depth-range`](https://github.com/realsenseai/librealsense/tree/development/examples/enhanced-depth-range) holds three demos. Each streams IR left, IR right and depth, runs the host-side close-range improver on every frame, and prints a status line: the two `range_depth` demos report close-range pixels recovered, and `live_close_range_compare.py` reports the gain in valid depth pixels. They need the separately distributed `librealsense2-enhanced-depth` package, installed under `/opt/librealsense2-enhanced-depth`. See the [examples README](https://github.com/realsenseai/librealsense/blob/development/examples/enhanced-depth-range/README.md) for how to obtain it. The improver's API (`rs_depth` in Python, `rs_depth_range.h` / `rs_depth_calibration.hpp` in C++) comes from that package, not from librealsense.
 
 | Example | What it does |
 |---|---|
@@ -162,7 +162,7 @@ From [`rs_hdrd_control.h`](https://github.com/realsenseai/librealsense/blob/deve
 | `rs2_hdrd_control_range` | struct | `min`, `max`, `step`, `def`, each an `rs2_hdrd_control`. Returned by `rs2_get_composite_option_range(RS2_COMPOSITE_OPTION_HDRD_CONTROL)`. Read-only | — |
 <!-- /wikigen:table-hdrd-control -->
 
-Python names: `rs.hdrd_control` (fields `header`, `enable`, `filter_type`, `downscale_ratio`, `shift_mode`, `shift_pixels`, `threshold_mode`, `threshold_mm`), `rs.hdrd_control_range` (`min`, `max`, `step`, `default`) and `rs.composite_option_id.hdrd_control` ([`pyrs_options.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/pyrs_options.cpp)).
+Python names: `rs.hdrd_control` (fields `header`, `enable`, `filter_type`, `downscale_ratio`, `shift_mode`, `shift_pixels`, `threshold_mode`, `threshold_mm`) and `rs.hdrd_control_range` (`min`, `max`, `step`, `default`) in [`pyrs_options.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/pyrs_options.cpp), and `rs.composite_option_id.hdrd_control` in [`c_files.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/c_files.cpp).
 
 ## Related pages
 
