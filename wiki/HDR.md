@@ -91,7 +91,7 @@ while (true)
 
 This is how the block behaves:
 
-- **Input.** It accepts only framesets that contain a depth frame with `RS2_FRAME_METADATA_SEQUENCE_SIZE` and `RS2_FRAME_METADATA_SEQUENCE_ID` metadata, and the sequence size must be 2. Other input passes through unchanged. After 20 frames without the needed metadata it logs one warning: `HDR Merge filter cannot process frames because relevant metadata params are missing`.
+- **Input.** It accepts only framesets that contain a depth frame with `RS2_FRAME_METADATA_SEQUENCE_SIZE` and `RS2_FRAME_METADATA_SEQUENCE_ID` metadata, and the sequence size must be 2. Other input passes through unchanged. After 20 frames without the needed metadata it logs a warning once (the count starts again when the depth frame counter goes backwards, e.g. after a pipeline restart): `HDR Merge filter cannot process frames because relevant metadata params are missing`.
 - **Pairing.** It stores the frameset of sequence ID 0 and then the one of sequence ID 1. The pair is merged only if the second depth frame counter is the first plus one and both frames have the same resolution.
 - **Merging with infrared.** Infrared is used when both framesets have infrared frames, and these conditions hold:
   - the infrared frames have the same size as the depth frames
@@ -101,7 +101,7 @@ This is how the block behaves:
 
   For each pixel, the merged value is the depth from the first frame if its infrared value is neither under- nor over-saturated and its depth is non-zero. Otherwise it is the second frame's depth under the same conditions, and otherwise `0`. For Y8, a usable value is strictly between 5 and 250. For Y16, it is strictly between 20 and 1003. With an infrared format other than Y8 or Y16, the block merges using depth only.
 - **Merging with depth only.** Each pixel takes the first frame's depth if it is non-zero, otherwise the second frame's.
-- **Output.** The block returns the latest merged frame. The saved frame is dropped if the input frame counter goes backwards, the resolution changes, or the input is 4 or more frames ahead of it.
+- **Output.** The block returns the latest merged frame, or the input frameset if no merged frame is saved. The saved frame is dropped if the input frame counter goes backwards, the resolution changes, or the input is 4 or more frames ahead of it.
 
 The example notes that merging works with depth alone, but the result is better when infrared is streamed too.
 
