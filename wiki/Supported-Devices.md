@@ -217,5 +217,5 @@ One limit does come from the code: MIPI recovery-device detection lives in the L
 For per-platform setup, see [[Installation Linux]], [[Installation Windows]], [[Installation macOS]], [[Installation Jetson]], [[Installation Raspberry Pi]] and [[Android]].
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`de7fa8c`](https://github.com/realsenseai/librealsense/commit/de7fa8cf3e05bac6f3ce6b5eeec2eb766c57259e)._
+_Maintained from librealsense `development`; last checked at commit [`65ed974`](https://github.com/realsenseai/librealsense/commit/65ed97469471f9d104969d2b7d029506058819bd)._
 <!-- /wikigen:footer -->
