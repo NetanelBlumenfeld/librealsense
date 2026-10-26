@@ -10,7 +10,7 @@ For connecting and installing GMSL/MIPI cameras, see [[Installation Jetson]] and
 | Name string | `RealSense D401` |
 | Device class | `rs401_gmsl_device` (created in [`d400-factory.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-factory.cpp)) |
 | Minimum firmware listed for the PID | `5.17.2.2` |
-| Device groups it belongs to | the D400 color, multi-sensor and MIPI device PID sets in `d400-private.h` |
+| Device groups it belongs to | the supported D400 SKU, multi-sensor and MIPI device PID sets in `d400-private.h` |
 
 The PID is assigned by the Linux MIPI backend: [`camera-identifier-v4l.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/linux/camera-identifier-v4l.cpp) reads the device's GVD and maps the D400 GMSL product byte `0x13` to PID `0xABCC` under vendor ID `0x8086`. The MIPI/GMSL path is part of the Linux backend (`src/linux/`).
 
@@ -70,7 +70,7 @@ For general pipeline usage see [[API How To]] and [[Code Samples]].
 
 ## Using the Viewer
 
-The RealSense Viewer (see [[Realsense Viewer Manual]]) applies the mode rules when it sees a dual-color device. In [`common/subdevice-model.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/subdevice-model.cpp), `is_dual_color_subdevice()` is true for product ID `ABCC` (and `0B5B`) when the sensor exposes `Color`, a second color stream and depth or infrared. For such a sensor:
+The RealSense Viewer (see [[Realsense Viewer Manual]]) applies the mode rules when it sees a dual-color device. In [`common/subdevice-model.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/subdevice-model.cpp), `is_dual_color_subdevice()` is true for product ID `ABCC` (and `0B5B`, *new in the next release*) when the sensor exposes `Color`, a second color stream and depth or infrared. For such a sensor:
 
 - Enabling `Color 1` turns off the infrared streams and switches `Color` to `RGB8` (raw dual-RGB).
 - Enabling an infrared stream turns off `Color 1` (ISP color).
@@ -85,8 +85,8 @@ For this PID the depth sensor's recommended processing blocks include `RGB Recti
 
 ## What the SDK does in raw dual-RGB mode
 
-- **Pixel formats.** The color fourcc maps accept `BA81` (mapped to `RS2_FORMAT_RAW8`) and `pBAA` (mapped to `RS2_FORMAT_RAW10`) as color. Code comments tie `BA81` to older MIPI drivers and `pBAA` to MIPI driver `1.0.6.10` and newer.
-- **Stream routing.** Both imagers arrive with the same raw fourcc. `resolve_d401_color_stream()` assigns the raw pin on the infrared node to `Color` (index 0, left imager) and the other to `Color 1` (index 1, right imager).
+- **Pixel formats.** The depth sensor's fourcc maps (color is on the depth sensor for this PID) accept `BA81` (mapped to `RS2_FORMAT_RAW8`) and `pBAA` (mapped to `RS2_FORMAT_RAW10`) as color. Code comments tie `BA81` to older MIPI drivers and `pBAA` to MIPI driver `1.0.6.10` and newer.
+- **Stream routing.** Both imagers arrive with the same raw fourcc. `resolve_d401_color_stream()` assigns the raw pin on the infrared node to `Color` (index 0, left imager) and the other to `Color 1` (index 1, right imager) *(changed in the next release: v2.59.1 ordered the raw pins by pin index only)*.
 - **Debayer.** `rggb_converter` turns each raw frame into `RGB8`. The Bayer phase is treated as BGGR (`isp.swap_rb = true`; the comment names the OV9782 imager).
 - **Resolutions.** The native color frame is `1288x808`. Each output resolution is produced by demosaicing the native image, center-cropping to the output aspect ratio and scaling. The intrinsics of each color profile are computed with the same crop and scale.
 - **Frame numbers.** Software color frame numbers are enabled, because the two imagers share one hardware frame counter (without this, FPS reads double).
