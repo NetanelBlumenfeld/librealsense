@@ -7,7 +7,7 @@ All functions on this page belong to the `rs2::auto_calibrated_device` class in 
 A device supports this API when it can be extended to `RS2_EXTENSION_AUTO_CALIBRATED_DEVICE`. In the code, that applies to:
 
 - **D400 devices**: `d400_device` inherits `auto_calibrated` ([src/ds/d400/d400-auto-calibration.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-auto-calibration.cpp)).
-- **D500 devices over USB**: `d500_device` inherits `d500_auto_calibrated` ([src/ds/d500/d500-auto-calibration.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-auto-calibration.cpp)).
+- **D500 devices over USB or MIPI**: `d500_device` inherits `d500_auto_calibrated` ([src/ds/d500/d500-auto-calibration.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-auto-calibration.cpp)).
 - **DDS (Ethernet) devices whose product line is `D500`**: the DDS device proxy installs a `d500_auto_calibrated` object through `auto_calibrated_proxy` ([src/dds/rs-dds-device-proxy.cpp](https://github.com/realsenseai/librealsense/blob/development/src/dds/rs-dds-device-proxy.cpp), [src/auto-calibrated-proxy.cpp](https://github.com/realsenseai/librealsense/blob/development/src/auto-calibrated-proxy.cpp)). If it did not install one, every call throws `Auto Calibration capability has not been initiated`. See [[Ethernet and DDS Cameras]].
 
 Not every function is implemented on both families:
@@ -74,8 +74,8 @@ The D400 implementation (`auto_calibrated::run_on_chip_calibration`) reads these
 | `scan parameter` | `0` | `0` = Py scan, `1` = Rx scan |
 | `data sampling` | `1` | `0` = polling, `1` = interrupt |
 | `apply preset` | `1` | Read, but the OCC code does not use it |
-| `fl step count` | `100` | Focal-length scan. Checked to be 8–256 |
-| `fy scan range` | `40` | Focal-length scan. Checked to be 1–60000 |
+| `fl step count` | `100` | Focal-length scan. Checked to be 8–256 when `calib type` is 1 |
+| `fy scan range` | `40` | Focal-length scan. Checked to be 1–60000 when `calib type` is 1 |
 | `keep new value after sucessful scan` | `1` | Spelled as in the code |
 | `fl data sampling` | `1` | `0` polling, `1` interrupt |
 | `adjust both sides` | `0` | `0` adjusts the right side only, `1` adjusts both sides |
@@ -85,7 +85,7 @@ The D400 implementation (`auto_calibrated::run_on_chip_calibration`) reads these
 | `scan only` | `0` | |
 | `interactive scan` | `0` | |
 | `step count v3` | `0` | When > 0, the keys `fill factor 0`, `fill factor 1`, … are read |
-| `resize factor` | | |
+| `resize factor` | `5` | A value given in an earlier OCC or tare call is kept for later calls |
 
 Example JSON, as built by rs-on-chip-calib:
 
@@ -132,7 +132,7 @@ calibration_table run_tare_calibration(float ground_truth_mm, std::string json_c
 | `apply preset` | `1` | | D400, D500 |
 | `host assistance` | `0` | 0–3 | D400 |
 | `depth` | `0` | | D400 |
-| `resize factor` | | | D400 |
+| `resize factor` | `5` (a value given in an earlier OCC or tare call is kept) | | D400 |
 
 When `apply preset` is 1, the code switches the visual preset to High Accuracy for the calibration and restores the previous preset afterwards. On D500, if the previous preset was Custom, it saves and restores the advanced-mode controls *(changed in the next release)*. In v2.59.1, tare calibration on D500 with the Custom preset throws `Calibration with custom visual preset is not supported`.
 
@@ -157,7 +157,7 @@ std::vector<uint8_t> run_focal_length_calibration(rs2::frame_queue left, rs2::fr
 - `adjust_both_sides`: `1` corrects both left and right focal lengths, `0` corrects the right one only.
 - `ratio`, `angle`: receive the correction ratio and the target's tilt angle.
 
-Both D400 and D500 implement it. On D500, the code scales `fx`/`fy` of the right camera by the ratio, or both cameras by its square root when `adjust_both_sides` is set.
+Both D400 and D500 implement it and apply the correction the same way: the correction factor is `ratio / 100 + 1` (`ratio` is a percentage). The code multiplies the right camera's `fx`/`fy` by this factor. When `adjust_both_sides` is set, it instead multiplies the right camera's values and divides the left camera's values by the factor's square root.
 
 ### UV-map (depth-to-color) calibration (D400 only)
 
@@ -167,7 +167,7 @@ std::vector<uint8_t> run_uv_map_calibration(rs2::frame_queue left, rs2::frame_qu
 // plus an overload that adds a progress callback as the last argument
 ```
 
-It calibrates the color camera against depth and returns a color calibration table. `health` receives `health_size` values in the order px, py, fx, fy. The Viewer calls it with `health_size` 4.
+It calibrates the color camera against depth and returns a color calibration table, or an empty table if px, py, fx or fy would change by 16 pixels or more. `health` must hold four floats: when a table is returned, the code writes the percent change of px, py, fx, fy, and it only checks that `health_size` is greater than 0. The Viewer calls it with `health_size` 4.
 
 ### Measure distance to the target
 
@@ -177,7 +177,7 @@ float calculate_target_z(rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::
 // plus an overload that adds a progress callback
 ```
 
-It returns the distance to the target plane in millimetres. On D400 the queues are left IR, right IR and depth, and only the left IR queue is used. On D500, `queue1` must hold at least 10 frames, otherwise the call throws.
+It returns the distance to the target plane in millimetres. On D400 the queues are left IR, right IR and depth, and only the left IR queue is used. On both D400 and D500, `queue1` must hold at least 10 frames, otherwise the call throws.
 
 ## Read, write and reset the calibration table
 
@@ -271,7 +271,7 @@ The script always waits up to about 5 seconds for a device (`wait_for_rs_device`
 2. **File mode** (`-i`): it reads the accelerometer CSV file. If you give a gyro file, it uses the first 4 seconds of it to compute the gyro bias.
 3. It fits the accelerometer scale/alignment and bias with least squares, and prints per-axis noise variances for accelerometer and gyroscope.
 4. It writes two files, next to the accel file in `-i` mode or in the current directory otherwise:
-   - `calibration.json`: `device_type` (always `"D435i"`), and under `imus[0]`, the `accelerometer` and `gyroscope` entries with `scale_and_alignment`, `bias` and `noise_variances`. The gyroscope scale is the identity matrix.
+   - `calibration.json`: `device_type` (always `"D435i"`), and under `imus[0]`, the `accelerometer` and `gyroscope` entries with `scale_and_alignment`, `bias` and, when the variance could be computed, `noise_variances` (the gyroscope has none in `-i` mode without a gyro file). The gyroscope scale is the identity matrix.
    - `calibration.bin`: the binary IMU calibration table.
 5. It asks `Would you like to write the results to the camera? (Y/N)`. On `Y`, it builds an EEPROM image and sends it with a raw `rs.debug_protocol` command. It then prints `SUCCESS: saved calibration to camera.` or `FAILED: failed to save calibration to camera.`
 
