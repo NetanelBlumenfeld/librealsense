@@ -285,7 +285,7 @@ These map directly to the algorithms described in [[Post Processing Filters]]; t
 | Enable aligned depth | Device-side depth-to-color alignment: the depth stream returns Z16 aligned to the color viewport. |
 | Alternate IR | When enabled, the IR image holds the amplitude of the depth correlation instead of the standard IR image. |
 | Thermal compensation | Depth thermal compensation, for selected D400 SKUs. |
-| Detection distance | Enables firmware calculation of per-detection distance (meters) on the object-detection stream. |
+| Detection distance | Enables firmware calculation of per-detection distance (meters) on the object-detection stream. On the object-detection sensor the Viewer shows it as a combo that picks the distance drawn on each detection box: **Off** (no distance), **Application** (estimated by the Viewer from the depth stream) or **Camera** (calculated by the camera; the only choice that turns the camera's control on) *(changed in the next release)*. In v2.59.1 the Viewer drew the camera's distance and estimated one from the depth stream only for detections where the camera reported 0. |
 | Gyro sensitivity | Gyro sensitivity level (61.0 / 30.5 / 15.3 / 7.6 / 3.8 milli-deg/sec). |
 
 ### Visual presets & hardware configuration
@@ -511,5 +511,5 @@ Distances and areas are shown as floating labels and connecting rulers; distance
 | **Z** (in the Measurement Tool) | Undo the last measurement change. |
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`65ed974`](https://github.com/realsenseai/librealsense/commit/65ed97469471f9d104969d2b7d029506058819bd)._
+_Maintained from librealsense `development`; last checked at commit [`bc496cd`](https://github.com/realsenseai/librealsense/commit/bc496cdb16beca36c41d2b96170e309fceb38d6e)._
 <!-- /wikigen:footer -->
