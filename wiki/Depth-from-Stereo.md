@@ -108,7 +108,7 @@ Depth frames (`RS2_FORMAT_Z16`) store 16-bit integer values. The pixel value mul
 
 `rs2::depth_frame::get_distance(x, y)` returns the distance in meters at a pixel, already scaled.
 
-On D400 devices the default is 0.001 (1 mm), except for the RealSense D405 and the GMSL RealSense D401, which use 0.0001 (0.1 mm). With advanced mode enabled, the D400 depth units become writable (see [[D400 Advanced Mode]]). See [`d400-device.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-device.cpp).
+On D400 devices the default is 0.001 (1 mm), except for the RealSense D405 and the GMSL RealSense D401, which use 0.0001 (0.1 mm). With advanced mode enabled (firmware 5.6.3.0 or later), the D400 depth units become writable (see [[D400 Advanced Mode]]). See [`d400-device.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/ds/d400/d400-device.cpp).
 
 ### Stereo baseline
 
