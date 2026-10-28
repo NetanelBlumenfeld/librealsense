@@ -295,5 +295,5 @@ Messages you may see, and where they come from:
 For more questions, see [[Troubleshooting Q&A]]. For supported cameras, see [[Supported Devices]]. To update camera firmware after installing, see [[Firmware Update]].
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`0d4fcab`](https://github.com/realsenseai/librealsense/commit/0d4fcabf634650b821200ad38eedaa13aa4cb704)._
+_Maintained from librealsense `development`; last checked at commit [`bc496cd`](https://github.com/realsenseai/librealsense/commit/bc496cdb16beca36c41d2b96170e309fceb38d6e)._
 <!-- /wikigen:footer -->

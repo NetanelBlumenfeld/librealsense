@@ -77,9 +77,8 @@ Due to the USB 3.0 translation layer between native hardware and virtual machine
 ## Installation 
 
 #### Q: `Fatal error: libudev.h:` when building from sources
-From version 2.9.0 a new dependency third-party package `libudev-dev` has to be installed:
+The `libudev-dev` package provides `libudev.h`. When CMake finds it, librealsense uses it for event-driven device detection; when CMake does not find it, the build prints `UDEV not found; using polling device-watcher!` and continues without it. If the error appears, install the package:
 `sudo apt-get install libudev-dev`
-See [Release Notes](https://github.com/realsenseai/librealsense/wiki/Release-Notes#prerequisites) for v2.9.0
 
 
 #### Q: How do I enable librealsense logs?
@@ -95,12 +94,14 @@ $ export LRS_LOG_LEVEL="<Log Level>"
 **Windows:**
 
 ```bash
-> set LRS_LOG_LEVEL="<Log Level>"
+> set LRS_LOG_LEVEL=<Log Level>
 ```
 
-> `<Log Level>` can be either `DEBUG`, `INFO`, `WARN`, `ERROR` or `FATAL` (case-insensitive)
+> `<Log Level>` can be either `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` or `NONE` (case-insensitive). On Windows, do not put quotes around the value: `cmd` keeps them as part of the value, and the level is then not recognized.
 
-See also [Troubleshooting Tips and Tricks](https://github.com/realsenseai/librealsense/blob/master/doc/troubleshooting.md) for kernel-level tracing on Linux.
+The level applies to the log file that librealsense writes to the current working directory, named after the date and time it was opened (for example `2026-01-31-14_05_09.log`).
+
+See also [Troubleshooting Tips and Tricks](https://github.com/realsenseai/librealsense/blob/development/doc/troubleshooting.md) for kernel-level tracing on Linux.
 
 
 #### Q: GCC Internal Error
@@ -118,7 +119,7 @@ This might indicate that you do not have enough memory or swap space on your mac
 
 First, try re-installing udev rules located in librealsense source directory:
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
-    sudo udevadm control --reload-rules && udevadm trigger
+    sudo udevadm control --reload-rules && sudo udevadm trigger
 
 If the issue persists, the cause might be due to the fact that your user is not part of the `plugdev` group.
 
@@ -135,7 +136,7 @@ This is a standard warning issued since Kernel 4.4-30+, it is only a notificatio
 
 This issue is caused since the patched module kernel version is incompatible with the resident kernel.
 Verify the actual kernel version with `uname -r`.
-Revert and proceed from the [Install dependencies](https://github.com/realsenseai/librealsense/blob/master/doc/installation.md#install-dependencies) step of the Linux installation guide.
+Revert and proceed from the [Install dependencies](https://github.com/realsenseai/librealsense/blob/development/doc/installation.md#install-dependencies) step of the Linux installation guide.
 
 
 
@@ -143,7 +144,8 @@ Revert and proceed from the [Install dependencies](https://github.com/realsensea
 
 Running `./scripts/patch-realsense-ubuntu-lts-hwe.sh` (or the other `patch-realsense-*.sh` scripts) fails with `fatal error: openssl/opensslv.h`.
 This is usually caused due to a missing dependency.
-Install the *openssl* development package (`libssl-dev`) as described in the [Install dependencies](https://github.com/realsenseai/librealsense/blob/master/doc/installation.md#install-dependencies) step.
+`patch-realsense-ubuntu-lts.sh` and `patch-realsense-ubuntu-lts-hwe.sh` check for `libssl-dev` and install it with `apt-get` when it is missing; `patch-realsense-ubuntu-L4T.sh` installs it unconditionally.
+Install the *openssl* development package (`libssl-dev`) as described in the [Install dependencies](https://github.com/realsenseai/librealsense/blob/development/doc/installation.md#install-dependencies) step.
 
 
 
@@ -176,6 +178,8 @@ The following message appears:
 
 >  Could NOT find PythonInterp (missing: PYTHON_EXECUTABLE)
 
+(With CMake 3.12 or newer, the build uses `find_package(Python)` instead, and the message reads `Could NOT find Python (missing: ...)`.)
+
 Please check the following:
 - Make sure Python is installed
 - **On Windows**: If you've just installed python, reboot (or log off) and try again
@@ -190,3 +194,7 @@ If this message appears you should install python 64 bit
 #### D400 Series Calibration Tools
 * On-Chip (self) calibration is available directly from the [RealSense Viewer](https://github.com/realsenseai/librealsense/wiki/Realsense-Viewer-Manual#on-chip--self-calibration) and via the SDK API. See [Self-Calibration for Depth Cameras](https://dev.realsenseai.com/docs/self-calibration-for-depth-cameras).
 * For the full Dynamic Calibration tools please check the [D400 Series Calibration Tools User Guide](https://dev.realsenseai.com/docs/intel-realsensetm-d400-series-calibration-tools-user-guide).
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`65ed974`](https://github.com/realsenseai/librealsense/commit/65ed97469471f9d104969d2b7d029506058819bd)._
+<!-- /wikigen:footer -->
