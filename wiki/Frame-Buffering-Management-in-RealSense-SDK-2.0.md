@@ -100,3 +100,7 @@ The pipeline does not expose an API for setting its internal frame queue capacit
  - Feed the pipeline output into your own `rs2::frame_queue` with the desired capacity (see [API How-To: Do Processing on a Background-Thread](https://github.com/realsenseai/librealsense/wiki/API-How-To#do-processing-on-a-background-thread)).
  - Use the sensor API directly with a `frame_queue` or `syncer` of the desired capacity, as shown above.
  - Use the asynchronous callback API and buffer frames yourself.
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`84e42c1`](https://github.com/realsenseai/librealsense/commit/84e42c1d2ce717c57dcf11f155bbe68bb41bbd1c)._
+<!-- /wikigen:footer -->
