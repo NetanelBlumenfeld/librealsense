@@ -146,7 +146,7 @@ A playback device exposes the sensors, streams, info and options of the recorded
 
 The RealSense Viewer ([[Realsense Viewer Manual]]) can record and play files:
 
-- **Record**: use the **Record** button in the device panel. The Viewer saves to a timestamped file name with the `.db3` extension (`.bag` when built with `BUILD_ROSBAG2=OFF`).
+- **Record**: while the device is streaming, use the **Record** button in the device panel. The Viewer uses a timestamped file name with the `.db3` extension (`.bag` when built with `BUILD_ROSBAG2=OFF`), either saved straight to the default folder or offered in a save dialog, depending on the Viewer's recording settings.
 - **Play**: choose **Add Source** > **Load Recorded Sequence**, or drag and drop a file onto the Viewer. Playback devices offer pause, speed selection and a seek bar.
 - **Legacy `.bag` files**: in a `BUILD_ROSBAG2` build, loading a `.bag` file opens a prompt saying ROS1 `.bag` recordings are deprecated, with **Convert**, **Play as-is** and **Cancel** buttons. **Convert** writes a `.db3` file next to the original and loads it.
 
@@ -182,7 +182,7 @@ Per-stream topics use the prefix `/device_<N>/sensor_<N>/<Stream>_<index>` and i
 | `<prefix>/imu/data` | `sensor_msgs/msg/Imu` (motion streams) |
 | `/tf_static` | `tf2_msgs/msg/TFMessage` (extrinsics) |
 
-With compression on, frames are PNG-encoded where possible; other formats are compressed with zstd, and the `format` field of the message records the layout (`<format>; zstd; ...`). Recordings can be replayed with stock ROS2 tools such as `ros2 bag play`; to inspect them, the repository guide suggests third-party viewers that read `.db3`, such as [Foxglove](https://foxglove.dev/). Full details are in [`doc/record-and-playback.md`](https://github.com/realsenseai/librealsense/blob/development/doc/record-and-playback.md).
+With compression on, frames are PNG-encoded where possible; other formats are compressed with zstd, and the `format` field of the message records the layout (`<format>; zstd; ...`). Recordings can be replayed with stock ROS2 tools such as `ros2 bag play` (according to doc/record-and-playback.md); to inspect them, the repository guide suggests third-party viewers that read `.db3`, such as [Foxglove](https://foxglove.dev/). Full details are in [`doc/record-and-playback.md`](https://github.com/realsenseai/librealsense/blob/development/doc/record-and-playback.md).
 
 ### Native ROS2 bags
 
@@ -220,7 +220,7 @@ Sample recordings (outdoor scene, staircase, objects under water, a D435i sample
 
 | Program | What it does |
 |---|---|
-| [`rs-record-playback`](https://github.com/realsenseai/librealsense/tree/development/examples/record-playback) | Example: records depth to `a.db3` with the pipeline, pauses and resumes recording, plays the file with a seek bar and pause. |
+| [`rs-record-playback`](https://github.com/realsenseai/librealsense/tree/development/examples/record-playback) | Example: records the default streams to `a.db3` with the pipeline and shows depth, pauses and resumes recording, plays the file with a seek bar and pause. |
 | [`rs-record`](https://github.com/realsenseai/librealsense/tree/development/tools/recorder) | Records the default pipeline streams to a file for a given time: `rs-record -f <path> -t <seconds>` (default 10 seconds). |
 | [`rs-convert`](https://github.com/realsenseai/librealsense/tree/development/tools/convert) | Converts a recording to PNG, CSV, 3D CSV, RAW, PLY or BIN files, or converts a `.bag` file to `.db3` with `-D`. |
 | [`rs-rosbag-inspector`](https://github.com/realsenseai/librealsense/tree/development/tools/rosbag-inspector) | GUI that shows the topics and messages in a legacy ROS1 `.bag` file. It does not open `.db3` files. |
