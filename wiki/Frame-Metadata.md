@@ -87,7 +87,7 @@ The `rs2_timestamp_domain` values, in code order:
 
 ## How metadata reaches the host
 
-Device-generated attributes are sent in the UVC payload header of each frame. The host backend must pass that header to librealsense, which stores it with the frame and parses individual attributes only when you ask for them. If the header does not reach the library, only host-side attributes such as `RS2_FRAME_METADATA_TIME_OF_ARRIVAL` are available, and the frame timestamp falls back to the system clock.
+On USB cameras, video frames carry device-generated attributes in the UVC payload header of each frame (Ethernet/DDS devices send them as separate metadata messages that librealsense attaches to the matching frame). The host backend must pass that header to librealsense, which stores it with the frame and parses individual attributes only when you ask for them. If the header does not reach the library, only host-side attributes such as `RS2_FRAME_METADATA_TIME_OF_ARRIVAL` are available, and the frame timestamp falls back to the system clock.
 
 ### Linux (V4L2 backend)
 
@@ -99,7 +99,7 @@ For kernels whose `uvcvideo` driver does not yet know a camera, the repository s
 
 The Windows backend reads the UVC header from the Media Foundation sample attributes (see [`src/mf/mf-uvc.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/mf/mf-uvc.cpp)). Two conditions apply:
 
-- **Build:** metadata support is compiled in only when the build uses WinSDK 10.0.10586.0 or later. With an older SDK, the build prints "The library will be compiled without the metadata support!" and continues. Set the CMake option `ENFORCE_METADATA` (default `OFF`) to make such a build fail instead (see [[Build Configuration]]).
+- **Build:** metadata support is compiled in unless the build uses WinSDK 8.1 or older. With such an SDK, the compiler prints a notification that UVC metadata requires WinSDK 10.0.10586.0 and "The library will be compiled without the metadata support!", and the build continues. Set the CMake option `ENFORCE_METADATA` (default `OFF`) to make such a build fail instead (see [[Build Configuration]]).
 - **Registry:** Windows passes metadata only for video devices that have the `MetadataBufferSizeInKB<n>` registry values set.
 
 [`scripts/realsense_metadata_win10.ps1`](https://github.com/realsenseai/librealsense/blob/development/scripts/realsense_metadata_win10.ps1) sets those values. When it runs, it:
@@ -123,7 +123,7 @@ PS> .\realsense_metadata_win10.ps1 -op install_all
 
 ### RSUSB backend
 
-When librealsense is built with `FORCE_RSUSB_BACKEND` (see [[Build Configuration]]), it talks to the camera through its own user-space UVC implementation. That implementation passes each frame's payload header to the library directly (see [`src/uvc/uvc-streamer.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/uvc/uvc-streamer.cpp)), so kernel patches and registry keys do not apply.
+When librealsense is built with `FORCE_RSUSB_BACKEND` (see [[Build Configuration]]; CMake turns it on automatically on macOS and Windows 7), it talks to the camera through its own user-space UVC implementation. That implementation passes each frame's payload header to the library directly (see [`src/uvc/uvc-streamer.cpp`](https://github.com/realsenseai/librealsense/blob/development/src/uvc/uvc-streamer.cpp)), so kernel patches and registry keys do not apply.
 
 ## Which attributes a frame carries
 
