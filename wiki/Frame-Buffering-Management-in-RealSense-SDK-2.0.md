@@ -38,7 +38,7 @@ Frame queues are the simplest x-platform synchronization primitive provided by S
     sensor.start(fq);
     
     // “wait for frame” command, it is a blocking call.
-    // It will send data as soon as it becomes available, and will block until then.
+    // It will send data as soon as it becomes available, and will block until then (by default up to 5000 ms, then it throws).
     rs2::frame f = fq.wait_for_frame();
     // Do something with the received frame
     
@@ -95,8 +95,12 @@ The pipeline simplifies the user interaction with the device and computer vision
     // Find the color data
     rs2::frame color = data.get_color_frame();
 
-The pipeline does not expose an API for setting its internal frame queue capacity; it is fixed at 1 so that `wait_for_frames()` always returns the most recent coherent frameset (lowest latency, older framesets are dropped). If your application needs deeper buffering, use one of the following instead of changing the SDK source:
+The pipeline does not expose an API for setting its internal frame queue capacity; it is fixed at 1 so that `wait_for_frames()` returns the most recent coherent frameset (lowest latency, older framesets are dropped; when playing back a recording with real-time mode off (`rs2::playback::set_real_time(false)`), the pipeline does not drop framesets from this queue but waits until the previous one is read). If your application needs deeper buffering, use one of the following instead of changing the SDK source:
 
  - Feed the pipeline output into your own `rs2::frame_queue` with the desired capacity (see [API How-To: Do Processing on a Background-Thread](https://github.com/realsenseai/librealsense/wiki/API-How-To#do-processing-on-a-background-thread)).
  - Use the sensor API directly with a `frame_queue` or `syncer` of the desired capacity, as shown above.
  - Use the asynchronous callback API and buffer frames yourself.
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`84e42c1`](https://github.com/realsenseai/librealsense/commit/84e42c1d2ce717c57dcf11f155bbe68bb41bbd1c)._
+<!-- /wikigen:footer -->

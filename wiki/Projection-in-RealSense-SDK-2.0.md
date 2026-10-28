@@ -26,7 +26,7 @@ Each stream of images provided by this SDK is also associated with a separate 3D
 The relationship between a stream's 2D and 3D coordinate systems is described by its intrinsic camera parameters, contained in the [`rs2_intrinsics`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_types.h) struct. Each model of RealSense device is somewhat different, and the `rs2_intrinsics` struct must be capable of describing the images produced by all of them. The basic set of assumptions is described below:
 
 1. Images may be of arbitrary size
-  * The `width` and `height` fields describe the number of rows and columns in the image, respectively
+  * The `width` and `height` fields describe the number of columns and rows in the image, respectively
 2. The field of view of an image may vary
   * The `fx` and `fy` fields describe the focal length of the image, as a multiple of pixel width and height
 3. The pixels of an image are not necessarily square
@@ -39,9 +39,9 @@ The relationship between a stream's 2D and 3D coordinate systems is described by
 Knowing the intrinsic camera parameters of an images allows you to carry out two fundamental mapping operations.
 
 1. Projection
-  * Projection takes a point from a stream's 3D coordinate space, and maps it to a 2D pixel location on that stream's images. It is provided by the header-only function [`rs2_project_point_to_pixel(...)`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/rsutil.h).
+  * Projection takes a point from a stream's 3D coordinate space, and maps it to a 2D pixel location on that stream's images. It is provided by the function [`rs2_project_point_to_pixel(...)`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/rsutil.h).
 2. Deprojection
-  * Deprojection takes a 2D pixel location on a stream's images, as well as a depth, specified in meters, and maps it to a 3D point location within the stream's associated 3D coordinate space. It is provided by the header-only function [`rs2_deproject_pixel_to_point(...)`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/rsutil.h).
+  * Deprojection takes a 2D pixel location on a stream's images, as well as a depth, specified in meters, and maps it to a 3D point location within the stream's associated 3D coordinate space. It is provided by the function [`rs2_deproject_pixel_to_point(...)`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/rsutil.h).
 
 Intrinsic parameters can be retrieved from any `rs2::video_stream_profile` object via a call to `get_intrinsics()`. (See [example here](https://github.com/realsenseai/librealsense/blob/development/examples/sensor-control/api_how_to.h))
 
@@ -56,9 +56,9 @@ Based on the design of each model of RealSense device, the different streams may
 3. **Modified Brown-Conrady** Distortion (`RS2_DISTORTION_MODIFIED_BROWN_CONRADY`)
   * A variation of Brown-Conrady where tangential distortion is applied to the radially distorted points. This model provides a closed-form formula to map from undistorted points to distorted points only, so it is supported by `rs2_project_point_to_pixel(...)` but **not** by `rs2_deproject_pixel_to_point(...)`.
 4. **Inverse Brown-Conrady** Distortion (`RS2_DISTORTION_INVERSE_BROWN_CONRADY`)
-  * The coefficients describe the inverse mapping (distorted to undistorted). Both directions are supported: deprojection is closed-form, projection is solved iteratively. This model is used by the color stream of the D400 series.
+  * The coefficients describe the inverse mapping (distorted to undistorted). Both directions are supported: projection is closed-form, deprojection is solved iteratively. This model is used by the color stream of the D400 series.
 5. **F-Theta** (`RS2_DISTORTION_FTHETA`)
-  * Fish-eye model where the image radius is proportional to the incidence angle. Supported by both projection and deprojection. Used by wide-FOV fisheye imagers.
+  * One-parameter fish-eye model: projection maps the undistorted radius `r` to `atan(2·r·tan(k1/2))/k1`, where `k1` is the first coefficient. Supported by both projection and deprojection. Used by wide-FOV fisheye imagers.
 6. **Kannala-Brandt** (`RS2_DISTORTION_KANNALA_BRANDT4`)
   * Four-parameter Kannala-Brandt fish-eye model. Supported by both projection and deprojection.
 
@@ -111,7 +111,7 @@ As mentioned above, mapping from 2D pixel coordinates to 3D point coordinates vi
       ```
 
   * If a device fails to determine the depth of a given image pixel, a value of zero will be stored in the depth image. This is a reasonable sentinel for "no depth" because all pixels with a depth of zero would correspond to the same physical location, the location of the imager itself.
-  * The default scale of a D400 or D500 series device is one millimeter, allowing for a maximum expressive range of ~65 meters. The depth scale can be modified by calling `rs2_set_option(...)` with `RS2_OPTION_DEPTH_UNITS`, which specifies the number of meters per one increment of depth. 0.001 would indicate millimeter scale, while 0.01 would indicate centimeter scale.
+  * The default scale of a D400 or D500 series device is one millimeter (the SDK's fixed default for the D405 and the GMSL D401 is 0.1 millimeter), allowing for a maximum expressive range of ~65 meters. The depth scale can be modified by calling `rs2_set_option(...)` with `RS2_OPTION_DEPTH_UNITS`, which specifies the number of meters per one increment of depth (on D400 devices only in advanced mode with firmware 5.6.3.0 or newer; otherwise the option is read-only). 0.001 would indicate millimeter scale, while 0.01 would indicate centimeter scale.
 
 ## Processing Blocks Helpers
 
@@ -219,3 +219,7 @@ It is not necessary to know which model of RealSense device is plugged in to suc
 
   * Unlike `RS2_FORMAT_Z16`, a disparity value of zero is meaningful. A stereo match with zero disparity will occur for objects "at infinity", objects which are so far away that the parallax between the two imagers is negligible. By contrast, there is a maximum possible disparity.
   * Disparity output is available on the D400 series and is controlled via the `advanced_mode` API.
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`84e42c1`](https://github.com/realsenseai/librealsense/commit/84e42c1d2ce717c57dcf11f155bbe68bb41bbd1c)._
+<!-- /wikigen:footer -->
