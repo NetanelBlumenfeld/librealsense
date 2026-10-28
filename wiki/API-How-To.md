@@ -15,7 +15,7 @@
 * [Get Frame Timestamp and Metadata](#get-frame-timestamp-and-metadata)
 * [Align Depth to Color](#align-depth-to-color)
 
-All snippets below use the librealsense2 C++ API (`#include <librealsense2/rs.hpp>`). Full runnable versions of most of them live in [examples/sensor-control/api_how_to.h](https://github.com/realsenseai/librealsense/blob/development/examples/sensor-control/api_how_to.h).
+All snippets below use the librealsense2 C++ API (`#include <librealsense2/rs.hpp>`). Fuller versions of some of them (getting a device, depth units, field of view, extrinsics, changing sensor options) live in [examples/sensor-control/api_how_to.h](https://github.com/realsenseai/librealsense/blob/development/examples/sensor-control/api_how_to.h).
 
 ### Get first RealSense device
 ```cpp
@@ -74,7 +74,7 @@ rs2::frame_queue queue(CAPACITY);
 std::thread t([&]() {
     while (true)
     {
-        rs2::depth_frame frame;
+        rs2::frame frame;
         if (queue.poll_for_frame(&frame))
         {
 	        frame.get_data();
@@ -212,3 +212,7 @@ while (true)
 }
 ```
 See [Projection in RealSense SDK 2.0](https://github.com/realsenseai/librealsense/wiki/Projection-in-RealSense-SDK-2.0#frame-alignment) and [examples/align](https://github.com/realsenseai/librealsense/tree/development/examples/align).
+
+<!-- wikigen:footer -->
+_Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
+<!-- /wikigen:footer -->
