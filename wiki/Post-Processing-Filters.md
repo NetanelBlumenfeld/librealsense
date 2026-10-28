@@ -53,7 +53,7 @@ The example applies its filters in this order. The comment in the example notes 
 6. Temporal
 7. Disparity-to-depth transform (only if step 4 was applied)
 
-D400 and D500 depth sensors also return an ordered list of recommended blocks from `rs2::sensor::get_recommended_filters()`. This list is built in [ds-device-common.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/ds-device-common.cpp) and [sensor.cpp](https://github.com/realsenseai/librealsense/blob/development/src/sensor.cpp). Its order is: decimation, rotation (set for depth and infrared), HDR merge, sequence ID filter, threshold, depth to disparity, spatial, temporal, hole filling, disparity to depth. On a D401, and on a D405 that publishes a second color stream, the D400 depth sensor adds the dual-RGB rectify filter to the end of the list (see [[D401 GMSL Dual RGB]]).
+D400 and D500 depth sensors also return an ordered list of recommended blocks from `rs2::sensor::get_recommended_filters()`. This list is built in [ds-device-common.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/ds-device-common.cpp) and [sensor.cpp](https://github.com/realsenseai/librealsense/blob/development/src/sensor.cpp). Its order is: decimation, rotation (set for depth and infrared), HDR merge, sequence ID filter, threshold, depth to disparity, spatial, temporal, hole filling, disparity to depth. On a D401 GMSL camera, and on a device with the D405 product ID that publishes a second color stream (Color 1), the D400 depth sensor adds the dual-RGB rectify filter to the end of the list (see [[D401 GMSL Dual RGB]]). The D405 case is *(changed in the next release)*: at v2.59.1 only the D401 GMSL camera added this filter.
 
 Spatial and temporal filtering is usually done in the disparity domain. That is why the depth-to-disparity transform comes before these filters and the disparity-to-depth transform comes after them.
 
@@ -75,7 +75,7 @@ spat_filter.set_option(RS2_OPTION_HOLES_FILL, 2);  // 4-pixel radius
 
 Some blocks inherit common options from their base class:
 
-- Blocks built on the stream-filter base (decimation, threshold, rotation, colorizer, point cloud, units transform) have `RS2_OPTION_FRAMES_QUEUE_SIZE`, `RS2_OPTION_STREAM_FILTER`, `RS2_OPTION_STREAM_FORMAT_FILTER` and `RS2_OPTION_STREAM_INDEX_FILTER`. The last three select the frames the block acts on.
+- Blocks built on the stream-filter base (decimation, threshold, rotation, spatial, temporal, hole filling, colorizer, point cloud, units transform, and the YUY, M420, NV12, MJPEG and Y411 decoders) have `RS2_OPTION_FRAMES_QUEUE_SIZE`, `RS2_OPTION_STREAM_FILTER`, `RS2_OPTION_STREAM_FORMAT_FILTER` and `RS2_OPTION_STREAM_INDEX_FILTER`. The last three select the frames the block acts on.
 - The disparity transform removes `RS2_OPTION_FRAMES_QUEUE_SIZE`.
 
 See [synthetic-stream.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/synthetic-stream.cpp).
@@ -102,7 +102,7 @@ The options, ranges and defaults below come from the constructors in [src/proc](
 | `rs2::temporal_filter` | `rs2_create_temporal_filter_block` | [temporal-filter.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/temporal-filter.cpp) | Smooths depth over time |
 | `rs2::spatial_filter` | `rs2_create_spatial_filter_block` | [spatial-filter.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/spatial-filter.cpp) | Edge-preserving spatial smoothing |
 | `rs2::disparity_transform` | `rs2_create_disparity_transform_block` | [disparity-transform.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/disparity-transform.cpp) | Depth to disparity and back |
-| `rs2::depth_huffman_decoder` | `rs2_create_huffman_depth_decompress_block` | [include/librealsense2/hpp/rs_processing.hpp](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_processing.hpp) | Decompresses Huffman-coded depth |
+| `rs2::depth_huffman_decoder` | `rs2_create_huffman_depth_decompress_block` | [include/librealsense2/hpp/rs_processing.hpp](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_processing.hpp) | Deprecated: the C creator throws a "deprecated" not-implemented error |
 | `rs2::hole_filling_filter` | `rs2_create_hole_filling_filter_block` | [hole-filling-filter.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/hole-filling-filter.cpp) | Fills invalid depth pixels |
 | `rs2::rates_printer` | `rs2_create_rates_printer_block` | [rates-printer.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/rates-printer.cpp) | Prints the frame rate of each stream |
 | `rs2::hdr_merge` | `rs2_create_hdr_merge_processing_block` | [hdr-merge.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/hdr-merge.cpp) | Merges HDR frame sequences |
@@ -111,7 +111,7 @@ The options, ranges and defaults below come from the constructors in [src/proc](
 
 ### Decimation filter
 
-`rs2::decimation_filter` reduces the width and height of a frame by the decimation scale. It is set up for Z16 depth by default, and the code also handles color and infrared formats such as YUYV, UYVY, RGB8, BGR8, RGBA8, BGRA8, Y8 and Y16. For Z16 depth it uses median filtering.
+`rs2::decimation_filter` reduces the width and height of a frame by the decimation scale. It is set up for Z16 depth by default, and the code also handles color and infrared formats such as YUYV, UYVY, RGB8, BGR8, RGBA8, BGRA8, Y8 and Y16. For Z16 depth it uses the median at scale 2 and 3, and the mean of the non-zero pixels at larger scales.
 
 | Option | Range | Step | Default | Notes |
 |---|---|---|---|---|
@@ -157,7 +157,7 @@ Values of `RS2_OPTION_HOLES_FILL`: 0 Disabled, 1 2-pixel radius, 2 4-pixel radiu
 
 Values of `RS2_OPTION_HOLES_FILL` (persistency): 0 Disabled, 1 Valid in 8/8, 2 Valid in 2/last 3, 3 Valid in 2/last 4, 4 Valid in 2/8, 5 Valid in 1/last 2, 6 Valid in 1/last 5, 7 Valid in 1/8, 8 Always on.
 
-The filter keeps a separate history for each stream type and index. It clears that history when the frame geometry changes (for example after a rotation) or when the stream appears to restart. A restart means the timestamp goes back, or the gap since the last frame is longer than the 8-frame history *(changed in the next release)*. At v2.59.1 the filter did not clear its history on these events.
+The filter keeps a separate history for each stream type and index. It clears that history when the frame geometry changes (for example after a rotation) or when the stream appears to restart. A restart means the timestamp goes back, or the gap since the last frame is longer than the 8-frame history *(changed in the next release)*. At v2.59.1 the filter cleared its history only when the frame size changed.
 
 ### Hole filling filter
 
@@ -177,7 +177,7 @@ The filter keeps a separate history for each stream type and index. It clears th
 
 ### HDR merge and sequence ID filter
 
-`rs2::hdr_merge` merges the frames of an HDR sequence into one depth frame. It has no filter options. It needs the sequence frame metadata. If that metadata is missing, the library logs the warning "HDR Merge filter cannot process frames because relevant metadata params are missing".
+`rs2::hdr_merge` merges the frames of an HDR sequence into one depth frame. It has no filter options. It needs the sequence frame metadata. When 20 frames arrive without that metadata, the library ([hdr-merge.cpp](https://github.com/realsenseai/librealsense/blob/development/src/proc/hdr-merge.cpp)) logs the warning "HDR Merge filter cannot process frames because relevant metadata params are missing". It logs it once, and again after the depth frame number starts over (a stream restart).
 
 `rs2::sequence_id_filter` passes only the frames of one sequence ID. It can be set with the constructor `sequence_id_filter(float sequence_id)`.
 
@@ -254,7 +254,7 @@ The camera reports the ranges. In the example, setting the decimation magnitude 
 
 ### Composite options (D500 devices)
 
-D500 depth sensors register the decimation, temporal and close-range embedded filters when the device firmware is recent enough (see [d500-device.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-device.cpp) and [d500-factory.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-factory.cpp)). These filters use composite options. A composite option is a struct that is read or written in one transaction. Composite options are declared in [rs_composite_option.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_composite_option.h):
+D500 depth sensors (except D585S) register the decimation, temporal and close-range embedded filters when the device firmware is recent enough, over USB and GMSL/MIPI *(changed in the next release)*. At v2.59.1, every D500 model except the D555, the D585S and the D585 with product ID 0x0B6A registered them only over USB (see [d500-device.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-device.cpp) and [d500-factory.cpp](https://github.com/realsenseai/librealsense/blob/development/src/ds/d500/d500-factory.cpp)). These filters use composite options. A composite option is a struct that is read or written in one transaction. Composite options are declared in [rs_composite_option.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_composite_option.h):
 
 | Composite option | Struct | Header |
 |---|---|---|
@@ -262,7 +262,7 @@ D500 depth sensors register the decimation, temporal and close-range embedded fi
 | `RS2_COMPOSITE_OPTION_TEMPORAL_FILTER_DPP` | `rs2_temporal_filter_dpp_config` | [rs_temporal_filter_dpp.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_temporal_filter_dpp.h) |
 | `RS2_COMPOSITE_OPTION_HDRD_CONTROL` | `rs2_hdrd_control` | [rs_hdrd_control.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_hdrd_control.h) |
 
-Each struct starts with a `dpp_header` (see [rs_dpp_header.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_dpp_header.h)). The header has `version`, `flags`, `ctl_id`, `param_count` and `param_type`, followed by 8 `int32_t` parameter slots. The SDK only accepts `DPP_HEADER_CURRENT_VERSION` (1). The decimation and temporal structs are 38 bytes each. Unused `reserved` slots must be zero when you set the option. `rs2_get_composite_option_range()` returns the bounds as `rs2_decimation_filter_dpp_range` or `rs2_temporal_filter_dpp_range`, each with `min`, `max`, `step` and `def` structs.
+Each struct starts with a `dpp_header` (see [rs_dpp_header.h](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_dpp_header.h)). The header has `version`, `flags`, `ctl_id`, `param_count` and `param_type`, followed by 8 `int32_t` parameter slots. The C++ typed calls (`get_composite_option_as()`, `get_composite_option_range_as()` and `set_composite_option_from()`) only accept `DPP_HEADER_CURRENT_VERSION` (1). The decimation, temporal and HDRD control structs are 38 bytes each. Unused `reserved` slots must be zero when you set the option. `rs2_get_composite_option_range()` returns the bounds as `rs2_decimation_filter_dpp_range`, `rs2_temporal_filter_dpp_range` or `rs2_hdrd_control_range`, each with `min`, `max`, `step` and `def` structs.
 
 Decimation fields, as documented in the header:
 
