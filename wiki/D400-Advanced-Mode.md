@@ -219,5 +219,5 @@ Other functions in `rs_advanced_mode.h`: `rs2_toggle_advanced_mode` and `rs2_is_
 Related pages: [[D400 Series Visual Presets]], [[Realsense Viewer Manual]], [[Depth Quality Tool]], [[Python Wrapper]], [[API How To]].
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`84e42c1`](https://github.com/realsenseai/librealsense/commit/84e42c1d2ce717c57dcf11f155bbe68bb41bbd1c)._
+_Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
 <!-- /wikigen:footer -->
