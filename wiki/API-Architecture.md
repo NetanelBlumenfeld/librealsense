@@ -12,7 +12,7 @@ The public headers live in [`include/librealsense2`](https://github.com/realsens
 | [`rs.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/rs.hpp) | C++ | Includes `rs.h` and the C++ wrappers under `hpp/` (types, context, device, frame, processing, record/playback, sensor, pipeline and others) |
 | [`hpp/rs_internal.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_internal.hpp) / [`h/rs_internal.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_internal.h) | C++ / C | Software device API. Not included by `rs.hpp`; include it separately |
 
-The C++ classes in `hpp/` are header-only wrappers: every method calls the matching `rs2_…` C function and converts its error into an exception.
+The C++ classes in `hpp/` are header-only wrappers: their methods call the matching `rs2_…` C functions (some return cached values or combine other calls) and turn any error into an exception.
 
 ## The layers
 
@@ -125,7 +125,7 @@ ctx.set_devices_changed_callback([&](rs2::event_information& info) {
 
 `event_information` offers `was_removed(dev)`, `was_added(dev)` and `get_new_devices()`. In C, the same is done with `rs2_set_devices_changed_callback(ctx, callback, user, &e)`, which passes the removed and added `rs2_device_list*` to the callback.
 
-`rs2::device_hub` wraps connect / disconnect handling: `wait_for_device()` returns a connected device or blocks until one connects (repeated calls cycle through connected devices), and `is_connected(dev)` checks whether a device is still connected.
+`rs2::device_hub` wraps connect / disconnect handling: `wait_for_device()` returns a connected device or waits up to one hour for one to connect, then throws (repeated calls cycle through connected devices), and `is_connected(dev)` checks whether a device is still connected.
 
 ## C API and C++ wrapper
 
@@ -236,10 +236,10 @@ Main calls:
 | | `register_info(info, value)` / `update_info(info, value)` | Set camera info such as name or serial number |
 | | `add_to(context&)` | Add the device to a context so it is listed by `query_devices()` |
 | | `set_destruction_callback(callback)` | Called when the device is destroyed |
-| `software_sensor` | `add_video_stream`, `add_motion_stream`, `add_pose_stream` | Define stream profiles (optional `is_default` flag) |
+| `software_sensor` | `add_video_stream`, `add_motion_stream`, `add_pose_stream`, `add_perception_stream` | Define stream profiles (optional `is_default` flag) |
 | | `on_video_frame`, `on_motion_frame`, `on_pose_frame` | Inject a frame (`rs2_software_video_frame`, `rs2_software_motion_frame`, `rs2_software_pose_frame`) |
 | | `set_metadata(value, type)` | Set metadata attached to the next frames |
-| | `add_read_only_option`, `update_read_only_option`, `add_option` | Expose options |
+| | `add_read_only_option`, `set_read_only_option`, `add_option` | Expose options |
 
 The `rs2_software_video_frame` fields are `pixels`, `deleter`, `stride`, `bpp`, `timestamp`, `domain`, `frame_number`, `profile` and `depth_units`. The example notes that the `syncer` expects timestamps to advance by about 1000/FPS milliseconds between frames. See the [example readme](https://github.com/realsenseai/librealsense/blob/development/examples/software-device/readme.md) for the full walk-through.
 
