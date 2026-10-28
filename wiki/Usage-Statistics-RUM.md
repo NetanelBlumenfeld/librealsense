@@ -20,7 +20,7 @@ Upload consent is one setting, `rum_cloud_enabled`, kept in the shared per-user 
 - **First run:** if the config file has no `rum_cloud_enabled` value, the Viewer opens a "Help improve RealSense" dialog. **Accept** is enabled only after you tick the consent box. It saves consent and starts an upload of any saved report. **Decline** saves the opt-out. The dialog links to the [privacy policy](https://realsenseai.github.io/librealsense/privacy-policy.html). Once a value is saved, the dialog does not appear again.
 - **Later:** open **Settings → Online Services**. Under **Real User Monitoring (RUM)**, tick or untick **Enable anonymous cloud upload**, then click **Apply** or **OK**.
 
-The **Online Services** tab and the RUM section exist only in Viewers built with `ENABLE_STATS`. See [[Realsense Viewer Manual]] for the rest of the Settings window.
+The RUM section exists only in Viewers built with `ENABLE_STATS`. The **Online Services** tab itself appears whenever the Viewer is built with libcurl (`CHECK_FOR_UPDATES`, `ENABLE_AI_ASSISTANT` or `ENABLE_STATS`). See [[Realsense Viewer Manual]] for the rest of the Settings window.
 
 ### From code
 
@@ -135,7 +135,7 @@ The report is a JSON object built in [`src/rum/rum-collector.cpp`](https://githu
 
 These paths are built from the app-data folder (`$HOME/.` on Linux and macOS, the roaming AppData folder on Windows). Call `rs2_rum_get_report_path` to get the report path from code instead of building it yourself.
 
-**When the report is written:** each time an SDK context is destroyed. On the first save in a process, the SDK merges the report already on disk into the in-memory counts, so data from several sessions accumulates in one file:
+**When the report is written:** each time an SDK context is destroyed, in builds with `ENABLE_STATS` only. On the first save in a process, the SDK merges the report already on disk into the in-memory counts, so data from several sessions accumulates in one file:
 
 - counts and durations are added;
 - the device `count` keeps the highest value seen;
@@ -153,7 +153,7 @@ Only the RealSense Viewer sends data ([`common/rum-uploader/rum-uploader.cpp`](h
 
   After a successful upload, `rum.json` is reset to `{ "source_id": … }` and `rum_last_upload` (Unix seconds) is saved.
 - **First run.** Nothing is uploaded until the consent dialog is accepted. Accepting it starts the same upload.
-- **Upload now.** **Settings → Online Services → Upload now** sends the saved report immediately. The button is enabled only when consent is saved. This upload does not reset `rum.json` and does not update `rum_last_upload`.
+- **Upload now.** **Settings → Online Services → Upload now** sends the saved report immediately in the background and shows the notification `RUM report uploaded` or `RUM upload failed`. If the saved report has no usage data, it shows `No RUM report saved yet` instead. If an upload is already running, the click does nothing. The button is enabled only when consent is saved. This upload does not reset `rum.json` and does not update `rum_last_upload`.
 - **Export RUM data...** saves a copy of the current `rum.json` to a JSON file you choose. If the saved report has no usage data, the Viewer shows the notification `No RUM report saved yet` instead. These messages come from [`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp).
 
 The current session is saved to disk only when its context closes. As a result, the startup upload, **Upload now** and **Export** all handle sessions that have already ended.
@@ -177,14 +177,14 @@ The C API is in [`include/librealsense2/h/rs_rum.h`](https://github.com/realsens
 |---|---|---|---|
 | `const rs2_raw_data_buffer* rs2_rum_get_report_path(rs2_error** error)` | `std::string get_report_path()` | `get_report_path()` | Path of the on-disk report file (UTF-8). Release the C buffer with `rs2_delete_raw_data`. Does not upload |
 | `void rs2_rum_set_cloud_enabled(int enabled, rs2_error** error)` | `void set_cloud_enabled(bool enabled)` | `set_cloud_enabled(enabled)` | Save upload consent to `realsense-config.json` |
-| `int rs2_rum_is_cloud_enabled(rs2_error** error)` | `bool is_cloud_enabled()` | `is_cloud_enabled()` | Resolved consent (environment variable first, then config file) |
+| `int rs2_rum_is_cloud_enabled(rs2_error** error)` | `bool is_cloud_enabled()` | `is_cloud_enabled()` | Resolved consent: the saved `rum_cloud_enabled` value, unless `RS2_RUM_CLOUD_ENABLED` is set. Any non-empty value other than `1` disables; `1` enables unless the config file saved an opt-out |
 <!-- /wikigen:table-api -->
 
 No API call returns the report contents. To inspect the report, read the file at the returned path. Tests for the API and the report are in [`unit-tests/rum`](https://github.com/realsenseai/librealsense/tree/development/unit-tests/rum).
 
 ## RUM dev server (`tools/rum-uploader`)
 
-[`tools/rum-uploader/dev-server/rum_dev_server.py`](https://github.com/realsenseai/librealsense/blob/development/tools/rum-uploader/dev-server/rum_dev_server.py) is a small local receiver for development. It is not a command-line uploader. It listens on `127.0.0.1`, accepts `POST /v1/rum`, saves each body as `rum-<timestamp>-<n>.json` in the output folder, prints a summary and replies `200`. Any other path gets `404`.
+[`tools/rum-uploader/dev-server/rum_dev_server.py`](https://github.com/realsenseai/librealsense/blob/development/tools/rum-uploader/dev-server/rum_dev_server.py) is a small local receiver for development. It is not a command-line uploader. It listens on `127.0.0.1`, accepts `POST /v1/rum`, saves each body as `rum-<timestamp>-<n>.json` in the output folder, prints a summary and replies `200`. A POST to any other path gets `404`.
 
 ```sh
 python rum_dev_server.py --port 8080 --dir received
