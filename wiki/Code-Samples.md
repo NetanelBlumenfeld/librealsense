@@ -50,13 +50,13 @@ One row per folder added by [`examples/CMakeLists.txt`](https://github.com/reals
 |---|---|---|---|
 | hello-realsense | `rs-hello-realsense` | Connects to a device and prints the distance to the object in the center of the depth image. | [examples/hello-realsense](https://github.com/realsenseai/librealsense/tree/development/examples/hello-realsense) |
 | gpu-frame | `rs-gpu-frame` | Uses the `rs2::gpu_frame` extension to reach the GPU pointer of a frame. | [examples/gpu-frame](https://github.com/realsenseai/librealsense/tree/development/examples/gpu-frame) |
-| software-device | `rs-software-device` (graphical) | Creates a `software_device` that feeds synthetic or external frames into SDK processing. | [examples/software-device](https://github.com/realsenseai/librealsense/tree/development/examples/software-device) |
-| capture | `rs-capture` (graphical) | Configures streaming and renders depth and color to the screen. | [examples/capture](https://github.com/realsenseai/librealsense/tree/development/examples/capture) |
+| software-device | `rs-software-device` (graphical) | Creates a `software_device` that feeds a generated depth frame and a color frame made from an embedded RealSense logo image into SDK processing (sync, point cloud). | [examples/software-device](https://github.com/realsenseai/librealsense/tree/development/examples/software-device) |
+| capture | `rs-capture` (graphical) | Enables all streams, prints their frame rates and renders them (depth colorized) to the screen. | [examples/capture](https://github.com/realsenseai/librealsense/tree/development/examples/capture) |
 | callback | `rs-callback` | Streams with the pipeline callback API and prints a frame counter per stream. | [examples/callback](https://github.com/realsenseai/librealsense/tree/development/examples/callback) |
 | save-to-disk | `rs-save-to-disk` | Streams in a console and saves video frames to PNG and their per-frame metadata to CSV. | [examples/save-to-disk](https://github.com/realsenseai/librealsense/tree/development/examples/save-to-disk) |
 | multicam | `rs-multicam` (graphical) | Streams and renders from several devices at once. | [examples/multicam](https://github.com/realsenseai/librealsense/tree/development/examples/multicam) |
 | pointcloud | `rs-pointcloud` (graphical) | Generates and displays a textured 3D point cloud. | [examples/pointcloud](https://github.com/realsenseai/librealsense/tree/development/examples/pointcloud) |
-| labeledpointcloud | `rs-labeled-pointcloud` (graphical) | Generates and displays a textured, labeled 3D point cloud. | [examples/labeledpointcloud](https://github.com/realsenseai/librealsense/tree/development/examples/labeledpointcloud) |
+| labeledpointcloud | `rs-labeled-pointcloud` (graphical) | Streams the device's labeled point cloud and displays each point colored by its label. | [examples/labeledpointcloud](https://github.com/realsenseai/librealsense/tree/development/examples/labeledpointcloud) |
 | align | `rs-align` (graphical) | Introduces spatial alignment of depth and color streams. | [examples/align](https://github.com/realsenseai/librealsense/tree/development/examples/align) |
 | align-gl | `rs-align-gl` (graphical, not macOS) | Spatial stream alignment accelerated on the GPU. | [examples/align-gl](https://github.com/realsenseai/librealsense/tree/development/examples/align-gl) |
 | align-advanced | `rs-align-advanced` (graphical) | Uses `rs2::align` to remove the background behind a near object. | [examples/align-advanced](https://github.com/realsenseai/librealsense/tree/development/examples/align-advanced) |
@@ -71,7 +71,7 @@ One row per folder added by [`examples/CMakeLists.txt`](https://github.com/reals
 | record-playback | `rs-record-playback` (graphical) | Records frames to a file (`a.db3`) with pause/resume and plays them back. | [examples/record-playback](https://github.com/realsenseai/librealsense/tree/development/examples/record-playback) |
 | motion | `rs-motion` (graphical) | Computes camera rotation from gyroscope and accelerometer data. | [examples/motion](https://github.com/realsenseai/librealsense/tree/development/examples/motion) |
 | gl | `rs-gl` (graphical, not macOS) | Processes depth data on the GPU. | [examples/gl](https://github.com/realsenseai/librealsense/tree/development/examples/gl) |
-| hdr | `rs-hdr` (graphical) | Configures and visualizes High Dynamic Range (HDR) on the depth sensor. | [examples/hdr](https://github.com/realsenseai/librealsense/tree/development/examples/hdr) |
+| hdr | `rs-hdr` (graphical) | Configures and visualizes High Dynamic Range (HDR) on the depth sensor of a D400 product line device. | [examples/hdr](https://github.com/realsenseai/librealsense/tree/development/examples/hdr) |
 | on-chip-calib | `rs-on-chip-calib` | Runs the on-chip calibration flow on a device. | [examples/on-chip-calib](https://github.com/realsenseai/librealsense/tree/development/examples/on-chip-calib) |
 | eth-config | `rs-eth-config` | Reads and changes Ethernet settings with `rs2::eth_config_device`. | [examples/eth-config](https://github.com/realsenseai/librealsense/tree/development/examples/eth-config) |
 | embedded-filters | `rs-embedded-filters` | Reads and changes the options of a device's embedded filters with `rs2::embedded_filter`. | [examples/embedded-filters](https://github.com/realsenseai/librealsense/tree/development/examples/embedded-filters) |
@@ -89,7 +89,7 @@ Python samples live in [`wrappers/python/examples`](https://github.com/realsense
 
 ## Shared helper headers
 
-The graphical C++ samples include [`examples/example.hpp`](https://github.com/realsenseai/librealsense/blob/development/examples/example.hpp) (window and texture helpers on top of GLFW/OpenGL) and, where they draw UI, [`examples/example-imgui.hpp`](https://github.com/realsenseai/librealsense/blob/development/examples/example-imgui.hpp). The C samples share [`examples/C/example.h`](https://github.com/realsenseai/librealsense/blob/development/examples/C/example.h).
+The graphical C++ samples include [`examples/example.hpp`](https://github.com/realsenseai/librealsense/blob/development/examples/example.hpp) (window and texture helpers on top of GLFW/OpenGL); the align, align-advanced, align-gl and hdr samples include it through [`examples/example-imgui.hpp`](https://github.com/realsenseai/librealsense/blob/development/examples/example-imgui.hpp). The C samples share [`examples/C/example.h`](https://github.com/realsenseai/librealsense/blob/development/examples/C/example.h).
 
 <!-- wikigen:footer -->
 _Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
