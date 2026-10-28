@@ -58,7 +58,7 @@ Based on the design of each model of RealSense device, the different streams may
 4. **Inverse Brown-Conrady** Distortion (`RS2_DISTORTION_INVERSE_BROWN_CONRADY`)
   * The coefficients describe the inverse mapping (distorted to undistorted). Both directions are supported: projection is closed-form, deprojection is solved iteratively. This model is used by the color stream of the D400 series.
 5. **F-Theta** (`RS2_DISTORTION_FTHETA`)
-  * Fish-eye model where the image radius is proportional to the incidence angle. Supported by both projection and deprojection. Used by wide-FOV fisheye imagers.
+  * One-parameter fish-eye model: projection maps the undistorted radius `r` to `atan(2·r·tan(k1/2))/k1`, where `k1` is the first coefficient. Supported by both projection and deprojection. Used by wide-FOV fisheye imagers.
 6. **Kannala-Brandt** (`RS2_DISTORTION_KANNALA_BRANDT4`)
   * Four-parameter Kannala-Brandt fish-eye model. Supported by both projection and deprojection.
 
@@ -111,7 +111,7 @@ As mentioned above, mapping from 2D pixel coordinates to 3D point coordinates vi
       ```
 
   * If a device fails to determine the depth of a given image pixel, a value of zero will be stored in the depth image. This is a reasonable sentinel for "no depth" because all pixels with a depth of zero would correspond to the same physical location, the location of the imager itself.
-  * The default scale of a D400 or D500 series device is one millimeter (the SDK's fixed default for the D405 and the GMSL D401 is 0.1 millimeter), allowing for a maximum expressive range of ~65 meters. The depth scale can be modified by calling `rs2_set_option(...)` with `RS2_OPTION_DEPTH_UNITS`, which specifies the number of meters per one increment of depth. 0.001 would indicate millimeter scale, while 0.01 would indicate centimeter scale.
+  * The default scale of a D400 or D500 series device is one millimeter (the SDK's fixed default for the D405 and the GMSL D401 is 0.1 millimeter), allowing for a maximum expressive range of ~65 meters. The depth scale can be modified by calling `rs2_set_option(...)` with `RS2_OPTION_DEPTH_UNITS`, which specifies the number of meters per one increment of depth (on D400 devices only in advanced mode with firmware 5.6.3.0 or newer; otherwise the option is read-only). 0.001 would indicate millimeter scale, while 0.01 would indicate centimeter scale.
 
 ## Processing Blocks Helpers
 
