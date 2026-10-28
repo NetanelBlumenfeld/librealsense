@@ -24,15 +24,15 @@ To keep CUDA but disable the zero-copy frame memory, add `-DBUILD_WITH_CUDA_ZERO
 Notes from `cuda_config.cmake`:
 
 - It calls `enable_language( CUDA )` and `find_package(CUDA REQUIRED)`, so the CUDA toolkit must be installed and visible to CMake.
-- The GPU architecture list depends on the toolkit version (for example sm_72 and sm_87 for Jetson Xavier and Orin with CUDA 11.x/12.x, sm_110 for Jetson Thor with CUDA 13.0 and later). With CMake 3.18 or newer it is passed as `CMAKE_CUDA_ARCHITECTURES`; with older CMake it is turned into `-gencode` flags.
+- The GPU architecture list depends on the toolkit version (for example sm_72 for Jetson Xavier with CUDA 11.x/12.x, sm_87 for Orin with CUDA 11.4 to 12.x, sm_110 for Jetson Thor with CUDA 13.0 and later). With CMake 3.18 or newer it is passed as `CMAKE_CUDA_ARCHITECTURES`; with older CMake it is turned into `-gencode` flags.
 
 For all other build switches see [[Build Configuration]].
 
 ### Runtime check
 
-A CUDA build still runs on machines without a usable GPU. Every CUDA call site first asks `rsutils::rs2_is_cuda_available()` ([`third-party/rsutils/include/rsutils/accelerators/gpu.h`](https://github.com/realsenseai/librealsense/blob/development/third-party/rsutils/include/rsutils/accelerators/gpu.h)), which loads the NVIDIA driver at runtime and returns true only if it reports at least one device. The result is cached for the process. When it returns false the SDK uses the CPU (SSE / NEON / plain C++) implementation.
+A CUDA build still runs on machines without a usable GPU. Every CUDA processing block first asks `rsutils::rs2_is_cuda_available()` ([`third-party/rsutils/include/rsutils/accelerators/gpu.h`](https://github.com/realsenseai/librealsense/blob/development/third-party/rsutils/include/rsutils/accelerators/gpu.h)), which loads the NVIDIA driver at runtime and returns true only if it reports at least one device. The result is cached for the process. When it returns false the SDK uses the CPU (SSE / NEON / plain C++) implementation.
 
-On NVIDIA Jetson (detected through `/etc/nv_tegra_release`) the RealSense Viewer shows a notification when it was built with CUDA but the CUDA runtime failed to initialize ([`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp)).
+On NVIDIA Jetson (detected through `/etc/nv_tegra_release`) the RealSense Viewer shows a notification when it was built with CUDA but the CUDA runtime failed to initialize, and, in a build without CUDA, one suggesting to install the CUDA runtime (no `/usr/local/cuda`) or to rebuild with `-DBUILD_WITH_CUDA=ON` ([`common/viewer.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/viewer.cpp)).
 
 ## What CUDA accelerates
 
@@ -60,7 +60,7 @@ The public API ([`include/librealsense2/hpp/rs_frame.hpp`](https://github.com/re
 |---|---|---|
 | `frame::get_data()` | `rs2_get_frame_data` | Host pointer, always valid. |
 | `frame::as<rs2::gpu_frame>()`, then `gpu_frame::get_gpu_data()` | `rs2_is_frame_extendable_to(..., RS2_EXTENSION_GPU_FRAME, ...)`, `rs2_get_frame_gpu_data` | The cast succeeds only when the frame is in zero-copy GPU memory; the pointer is a CUDA device pointer to the same buffer. `rs2_get_frame_gpu_data` returns NULL otherwise. |
-| `frame::get_gpu_data_or_upload(bool* copied = nullptr)` | `rs2_get_frame_gpu_data_or_upload` | On a CUDA build, always a device pointer: zero-copy (`copied` false) or an SDK-managed upload (`copied` true). NULL on a non-CUDA build. |
+| `frame::get_gpu_data_or_upload(bool* copied = nullptr)` | `rs2_get_frame_gpu_data_or_upload` | On a CUDA build, a device pointer: zero-copy (`copied` false) or an SDK-managed upload (`copied` true). NULL on a non-CUDA build or when the upload fails (for example, no usable GPU). |
 
 The device pointer refers to the shared frame buffer: treat it as read-only and keep the frame alive until your GPU work is finished.
 
@@ -71,7 +71,7 @@ if( auto gf = color.as< rs2::gpu_frame >() )
 else if( const void * dev = color.get_gpu_data_or_upload() )
     use_on_gpu( dev );                               // SDK copied the frame to the GPU
 else
-    use_on_cpu( color.get_data() );                  // library built without CUDA
+    use_on_cpu( color.get_data() );                  // built without CUDA, or no usable GPU
 ```
 
 `use_on_gpu` and `use_on_cpu` stand for your own code.
@@ -84,13 +84,13 @@ The example streams color, skips 30 frames, then prints five lines with the host
 
 - `ZERO-COPY (no copy)`: CUDA build with zero-copy on an integrated GPU.
 - `UPLOAD (host->device copy)`: CUDA build where frames are not GPU-resident (discrete GPU, or zero-copy not built).
-- `NONE (non-CUDA build)`: library built without CUDA.
+- `NONE (non-CUDA build)`: library built without CUDA, or no GPU the upload could use.
 
 It ends with a summary that starts with `ZERO-COPY ACTIVE`, `CUDA build, but frames are NOT zero-copy-resident` or `Non-CUDA build`. See also the example's [readme](https://github.com/realsenseai/librealsense/blob/development/examples/gpu-frame/readme.md).
 
 ## OpenGL (GLSL) processing
 
-`BUILD_GLSL_EXTENSIONS` (default `ON`) builds the separate `realsense2-gl` library from [`src/gl`](https://github.com/realsenseai/librealsense/tree/development/src/gl). The top-level `CMakeLists.txt` adds `src/gl` only when `BUILD_GLSL_EXTENSIONS` is on and `BUILD_EXAMPLES` or `BUILD_PC_STITCHING` is on. `BUILD_GRAPHICAL_EXAMPLES` and `BUILD_PC_STITCHING` switch `BUILD_GLSL_EXTENSIONS` on.
+`BUILD_GLSL_EXTENSIONS` (default `ON`) builds the separate `realsense2-gl` library from [`src/gl`](https://github.com/realsenseai/librealsense/tree/development/src/gl). The top-level `CMakeLists.txt` adds `src/gl` only when `BUILD_GLSL_EXTENSIONS` is on and `BUILD_EXAMPLES` or `BUILD_PC_STITCHING` is on. `BUILD_PC_STITCHING` switches `BUILD_GLSL_EXTENSIONS` on; `BUILD_GRAPHICAL_EXAMPLES` needs it (the graphical tools link `realsense2-gl`) but sets it only inside `tools/CMakeLists.txt`, too late to add `src/gl`.
 
 The API is in [`include/librealsense2-gl/rs_processing_gl.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2-gl/rs_processing_gl.hpp), namespace `rs2::gl`. Call `rs2::gl::init_processing(...)` (and `rs2::gl::init_rendering()` if you render) first, then use the GL blocks in place of the CPU ones:
 
@@ -110,7 +110,7 @@ How the path is chosen in [`src/proc/color-formats-converter.cpp`](https://githu
 2. Otherwise, if the build has SSSE3 (`__SSSE3__`), is not Android and targets x86-64, the AVX2 kernels are compiled in (`AVX2_SUPPORT` in [`src/image-avx.h`](https://github.com/realsenseai/librealsense/blob/development/src/image-avx.h)). Only these functions get the AVX2 target attribute, so the rest of the library does not require an AVX2 CPU.
 3. At runtime the AVX2 kernel runs when `rsutils::os::cpu_supports_avx2()` is true, the pixel count is a multiple of 32, and the output is not Y8 or Y16. Otherwise the SSSE3 loop is used.
 
-On Unix builds for targets other than ARM, PowerPC and RISC-V, `CMake/unix_config.cmake` adds `-mssse3`; on Windows for non-ARM targets, `CMake/windows_config.cmake` defines `__SSSE3__`. In both cases CMake prints `Building with SSE optimizations`. No CMake option is needed to enable the AVX2 path.
+On Unix builds for targets other than ARM, PowerPC and RISC-V, `CMake/unix_config.cmake` adds `-mssse3`; on Windows for non-ARM targets, `CMake/windows_config.cmake` defines `__SSSE3__` *(changed in the next release)*. In v2.59.1 Windows defined it for ARM targets too. In both cases CMake prints `Building with SSE optimizations`. No CMake option is needed to enable the AVX2 path.
 
 <!-- wikigen:footer -->
 _Maintained from librealsense `development`; last checked at commit [`84e42c1`](https://github.com/realsenseai/librealsense/commit/84e42c1d2ce717c57dcf11f155bbe68bb41bbd1c)._
