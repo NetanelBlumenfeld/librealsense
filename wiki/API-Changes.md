@@ -16,6 +16,7 @@
 - Changed APIs
   - `rs2_hdrd_control::threshold_mode` - documented default changed from 0 (Zero range) to 1 (MinZ range, computed by the firmware). Values are still 0 = Zero range, 1 = MinZ range, 2 = Manual.
   - `rs2::save_to_ply` - a device point cloud (`RS2_STREAM_POINT_CLOUD`) has no texture coordinates, so it is exported without texture coordinates or color even when a color frame is given.
+  - `rs2_hdrd_control` - only some Depth profiles are supported; others are rejected when the control is enabled or when the stream is opened.
 <!-- /wikigen:upcoming -->
 
 ## Version [2.59.1](https://github.com/realsenseai/librealsense/releases/tag/v2.59.1) beta
