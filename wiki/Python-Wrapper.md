@@ -70,7 +70,7 @@ The script:
 
 1. generates `pyrealsense2/_version.py` from `include/librealsense2/rs.h` (via [`find_librs_version.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/find_librs_version.py));
 2. copies the extension (`pyrealsense2*.pyd` on Windows, `pyrealsense2*.so` elsewhere) and the librealsense shared library (`realsense2.dll`, `librealsense2*.dylib` or `librealsense2.so*`) from the build directory into `pyrealsense2/`;
-3. installs `build` and `hatchling` if missing, and runs `python -m build --wheel`, producing `dist/pyrealsense2-*.whl`.
+3. installs `build` and `hatchling` if `python -m build --version` fails, and runs `python -m build --wheel`, producing `dist/pyrealsense2-*.whl`.
 
 `--extra-lib GLOB` (repeatable) bundles further runtime libraries, for example `--extra-lib "fastdds*.dll" --extra-lib "fastcdr*.dll" --extra-lib "foonathan_memory*.dll"` for a Windows build with DDS. Install the result with `pip install dist/pyrealsense2-*.whl`.
 
@@ -100,7 +100,7 @@ finally:
     pipeline.stop()
 ```
 
-- `pipeline.start()` has overloads with no arguments, with a `config`, with a callback, and with a `frame_queue`.
+- `pipeline.start()` has overloads with no arguments, with a `config`, with a callback, with a `frame_queue`, with a `config` and a callback, and with a `config` and a `frame_queue`.
 - `frameset.get_depth_frame()` returns an empty frame if the set has no depth frame; frames support truth testing (`if not depth`).
 - `depth_frame.get_distance(x, y)` returns the depth in meters at the given pixel.
 
@@ -128,7 +128,7 @@ All examples are in [`wrappers/python/examples`](https://github.com/realsenseai/
 | [`depth_auto_calibration_example.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/depth_auto_calibration_example.py) | D400 self-calibration flow (on-chip, focal-length and tare calibration). |
 | [`depth_ucal_example.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/depth_ucal_example.py) | Auto-calibration APIs for the OCC and Tare flows. |
 | [`d500_triggered_calibration.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d500_triggered_calibration.py) | Triggered calibration API, comparing depth before and after. |
-| [`d5x5_interactive_triggered_calibration.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d5x5_interactive_triggered_calibration.py) | Two-phase interactive triggered calibration for D5x5 cameras over USB. |
+| [`d5x5_interactive_triggered_calibration.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d5x5_interactive_triggered_calibration.py) | Interactive triggered calibration (run, optional try new/old, then commit or cancel) for cameras whose name contains D535 or D585, excluding D585S. |
 | [`d5x5_get_depth_mapping_params.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d5x5_get_depth_mapping_params.py) *(new in the next release)* | Read the occupancy grid and labeled point cloud parameters of a D5x5 camera. |
 | [`d5x5_set_depth_mapping_params.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d5x5_set_depth_mapping_params.py) *(new in the next release)* | Write those parameters from a JSON file (default [`d5x5_depth_mapping_params.json`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/d5x5_depth_mapping_params.json)). |
 | [`box_dimensioner_multicam/box_dimensioner_multicam_demo.py`](https://github.com/realsenseai/librealsense/blob/development/wrappers/python/examples/box_dimensioner_multicam/box_dimensioner_multicam_demo.py) | Measure a box's length, width and height with multiple cameras, calibrated with a chessboard. |
@@ -152,7 +152,7 @@ All examples are in [`wrappers/python/examples`](https://github.com/realsenseai/
   | `pyrs_context.cpp` | `context` and device enumeration |
   | `pyrs_pipeline.cpp` | `config`, `pipeline`, `pipeline_profile` |
   | `pyrs_internal.cpp` | Software device and other internal APIs |
-  | `pyrs_export.cpp` | Export (PLY) |
+  | `pyrs_export.cpp` | Export (`save_single_frameset`) |
   | `pyrs_advanced_mode.cpp` | D400 advanced mode, serializable device |
   | `pyrsutil.cpp` | Utility functions (projection) |
   | `pyrs_eth_config.cpp` | Ethernet device configuration (`eth_config_device`) |
