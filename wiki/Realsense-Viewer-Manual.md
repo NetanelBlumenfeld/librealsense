@@ -161,6 +161,8 @@ At the top of each sensor's section:
 * **Frame Rate (FPS)** combo — sets the streaming frame rate.
 * Per-stream / per-format checkboxes — pick which streams (and pixel formats) to enable for that sensor.
 
+On a D500 **Stereo Module**, the Viewer can show a separate **Resolution** combo for each stream type, each with its own stream checkboxes. It does this on the D585S, on other D500 cameras while the embedded decimation filter is enabled, and on dual-RGB cameras, where color gets a combo of its own that both color streams share *(changed in the next release)*. On a dual-RGB camera with decimation off, infrared uses the depth resolution and is listed with depth. In v2.59.1 the split view appeared only on the D585S or with embedded decimation enabled, and it covered depth and infrared only ([`common/subdevice-model.cpp`](https://github.com/realsenseai/librealsense/blob/development/common/subdevice-model.cpp)).
+
 These controls are locked while the sensor is streaming; hovering a locked control shows the tooltip **"Can't modify while streaming"**.
 
 Frequently used options are shown directly under Stream Selection without needing to open **Controls**: **Visual preset**, **Enable aligned depth**, **Emitter enabled**, **Enable auto exposure**, and **Auto Exposure Mode** (depth auto-exposure mode).
@@ -511,5 +513,5 @@ Distances and areas are shown as floating labels and connecting rulers; distance
 | **Z** (in the Measurement Tool) | Undo the last measurement change. |
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
+_Maintained from librealsense `development`; last checked at commit [`e12faf3`](https://github.com/realsenseai/librealsense/commit/e12faf3cf8e19688f1ad2c832037c8a06f319429)._
 <!-- /wikigen:footer -->
