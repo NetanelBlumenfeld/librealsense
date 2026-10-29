@@ -248,5 +248,5 @@ The camera's MTU (`--mtu` in `rs-dds-config`, `rs2_set_mtu` in the API) sets the
 - [[Troubleshooting Q&A]]
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`bc496cd`](https://github.com/realsenseai/librealsense/commit/bc496cdb16beca36c41d2b96170e309fceb38d6e)._
+_Maintained from librealsense `development`; last checked at commit [`e12faf3`](https://github.com/realsenseai/librealsense/commit/e12faf3cf8e19688f1ad2c832037c8a06f319429)._
 <!-- /wikigen:footer -->
