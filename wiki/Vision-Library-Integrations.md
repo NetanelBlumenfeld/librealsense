@@ -50,7 +50,7 @@ For the general build flow and the other options see [[Build Configuration]], [[
 - **`BUILD_OPEN3D_EXAMPLES`**: the folder requires CMake 3.12 and looks for an installed Open3D (`find_package(Open3D ...)`). It uses `${CMAKE_INSTALL_PREFIX}/lib/cmake` as a hint on Linux and macOS, and `${CMAKE_INSTALL_PREFIX}/CMake` on Windows. If Open3D 0.12 or newer is not found, configuration stops with `Open3D v0.12+ not found, please use -DCMAKE_INSTALL_PREFIX=open3d_install_dir`. The folder defines its own `STATIC_WINDOWS_RUNTIME` option (default `ON`), which must match the setting Open3D was built with.
 - **`BUILD_OPENVINO_EXAMPLES`**: set the cache path `INTEL_OPENVINO_DIR` to your OpenVINO installation. Otherwise configuration stops with `Invalid OpenVINO directory specified with INTEL_OPENVINO_DIR`. The script includes `${INTEL_OPENVINO_DIR}/inference_engine/share/InferenceEngineConfig.cmake`, so it only works with OpenVINO installations that have this Inference Engine layout. Both samples also need `OpenCV_DIR` (`OpenVINO examples require OpenCV; specify OpenCV_DIR`). The pre-trained models are downloaded into each sample's build folder during configuration (see [OpenVINO](#openvino)).
 - **`BUILD_DLIB_EXAMPLES`**: set `DLIB_DIR` to an extracted dlib source tree. Otherwise configuration stops with `Invalid DLIB directory specified with DLIB_DIR`. dlib is compiled as part of the librealsense build (`add_subdirectory(${DLIB_DIR} build)`).
-- **`BUILD_OPENNI2_BINDINGS`**: builds the shared library `rs2driver` into `<build>/_out`. Include paths come from the cache paths `OPENNI2_DIR` (default `c:/Program Files/OpenNI2`) and `REALSENSE2_DIR` (default `c:/Program Files (x86)/Intel RealSense SDK 2.0`). On Linux, set `OPENNI2_DIR` to the folder that contains the OpenNI2 headers.
+- **`BUILD_OPENNI2_BINDINGS`**: builds the shared library `rs2driver` into `<build>/_out`. Include paths come from the cache paths `OPENNI2_DIR` (default `c:/Program Files/OpenNI2`) and `REALSENSE2_DIR` (default `c:/Program Files (x86)/Intel RealSense SDK 2.0`). On Linux, macOS and other Unix-like systems (CMake `UNIX`), set `OPENNI2_DIR` to the folder that contains the OpenNI2 headers. On Windows the build adds `OPENNI2_DIR/Include`.
 - **`BUILD_PC_STITCHING`**: if `BUILD_GLSL_EXTENSIONS` is off, the top-level `CMakeLists.txt` turns it on. It also builds the bundled GLFW when GLFW 3.3 is not found. The sample needs OpenGL.
 
 ## OpenCV
@@ -141,7 +141,7 @@ For Python, the [`opencv_viewer_example.py`](https://github.com/realsenseai/libr
 | Sample | Executable | Description |
 |---|---|---|
 | [pcl](https://github.com/realsenseai/librealsense/tree/development/wrappers/pcl/pcl) | `rs-pcl` | Captures a depth frame, converts it to `pcl::PointCloud` and applies a `PassThrough` filter. Points that pass the filter are drawn in green and the rest in red. |
-| [pcl-color](https://github.com/realsenseai/librealsense/tree/development/wrappers/pcl/pcl-color) | `rs-pcl-color` | Same flow with RGB color per point (`pcl::PointXYZRGB`); writes the filtered cloud to a `Captured_Frame<N>.pcd` file and shows it in a PCL viewer |
+| [pcl-color](https://github.com/realsenseai/librealsense/tree/development/wrappers/pcl/pcl-color) | `rs-pcl-color` | Same flow with RGB color per point (`pcl::PointXYZRGB`); writes the unfiltered colored cloud to a `Captured_Frame<N>.pcd` file and shows it in a PCL viewer (the `PassThrough` result is not used) |
 
 The conversion takes an `rs2::points` object from `rs2::pointcloud::calculate()` and copies its vertices into `pcl::PointXYZ` (or `pcl::PointXYZRGB`) points. See [`rs-pcl.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/pcl/pcl/rs-pcl.cpp) and [`rs-pcl-color.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/pcl/pcl-color/rs-pcl-color.cpp).
 
@@ -154,7 +154,7 @@ Open3D has its own RealSense support (`open3d::t::io::RealSenseSensor` and `RSBa
 | `RealSenseBagReader` | [`cpp/RealSenseBagReader.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/open3d/cpp/RealSenseBagReader.cpp) | `RealSenseBagReader [-V] --input input.bag [--output path]`: plays the color and depth streams of a bag file; with `--output`, also writes the frames as images |
 | `RealSenseRecorder` | [`cpp/RealSenseRecorder.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/open3d/cpp/RealSenseRecorder.cpp) | `RealSenseRecorder [-h\|--help] [-V] [-l\|--list-devices] [--align] [--record rgbd_video_file.bag] [-c\|--config rs-config.json]`: shows live capture and optionally records to a bag file; a JSON config file is required |
 
-To build them, install Open3D 0.12 or newer and configure librealsense with `-DBUILD_OPEN3D_EXAMPLES=ON -DCMAKE_INSTALL_PREFIX=<open3d_install_dir>` (see [What each option requires](#what-each-option-requires)). On Windows, if Open3D is a shared library, the build copies `Open3D.dll` next to each executable.
+To build them, install Open3D 0.12 or newer and configure librealsense with `-DBUILD_OPEN3D_EXAMPLES=ON -DCMAKE_INSTALL_PREFIX=<open3d_install_dir>` (see [What each option requires](#what-each-option-requires)). On Windows, if Open3D is a shared library, the build copies `Open3D.dll` into `<build>/wrappers/open3d/<config>`, not into the folder that holds the executables.
 
 For Python, Open3D's own package provides the same classes (`o3d.t.io.RealSenseSensor`, `o3d.t.io.RSBagReader`). The [Open3D readme](https://github.com/realsenseai/librealsense/blob/development/wrappers/open3d/readme.md) has C++ and Python snippets for listing devices, configuring a camera with a JSON file, capturing and recording, and for passing a bag file to Open3D's reconstruction pipeline. Open3D's API documentation is at [open3d.org](http://www.open3d.org/docs/latest/introduction.html).
 
@@ -195,7 +195,7 @@ At runtime, the sample loads `shape_predictor_68_face_landmarks.dat` from the cu
 To use it:
 
 1. Configure with `-DBUILD_OPENNI2_BINDINGS=ON` and set `OPENNI2_DIR` (and `REALSENSE2_DIR` if needed).
-2. Build. The library is written to `<build>/_out`.
+2. Build. The library is written to `<build>/_out` (`<build>/_out/<config>` with Visual Studio and other multi-config generators).
 3. Copy the driver and the RealSense library into the OpenNI2 drivers folder. The [OpenNI2 readme](https://github.com/realsenseai/librealsense/blob/development/wrappers/openni2/README.md) gives `OPENNI2_DIR/Samples/Bin/OpenNI2/Drivers/`:
    - Windows: `rs2driver.dll` and `realsense2.dll`
    - Linux: `librs2driver.so` and `librealsense2.so`
@@ -215,7 +215,7 @@ When run without arguments, or with `-h`/`--help`, it prints its usage text. The
 
 ## TensorFlow
 
-[`wrappers/tensorflow`](https://github.com/realsenseai/librealsense/tree/development/wrappers/tensorflow) is a Python tutorial. It has no CMake option and is not compiled. The scripts import `pyrealsense2`, `numpy` and `cv2`; the first two also import `tensorflow`. The repository contains no notebooks; the material is the [README](https://github.com/realsenseai/librealsense/blob/development/wrappers/tensorflow/README.md) plus these scripts:
+[`wrappers/tensorflow`](https://github.com/realsenseai/librealsense/tree/development/wrappers/tensorflow) is a Python tutorial. It has no CMake option and is not compiled. The three example scripts and `tools/convert_to_bag.py` import `pyrealsense2`, `numpy` and `cv2`, and the first two examples also import `tensorflow`. `tools/rmse.py` uses `cv2`, `numpy` and `matplotlib` without `pyrealsense2`. The repository contains no notebooks; the material is the [README](https://github.com/realsenseai/librealsense/blob/development/wrappers/tensorflow/README.md) plus these scripts:
 
 | Script | Description |
 |---|---|
