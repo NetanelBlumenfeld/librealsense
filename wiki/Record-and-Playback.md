@@ -288,5 +288,5 @@ Flags for these tools are listed in [[Command Line Tools]].
 Header files: [`rs_record_playback.h`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/h/rs_record_playback.h), [`rs_record_playback.hpp`](https://github.com/realsenseai/librealsense/blob/development/include/librealsense2/hpp/rs_record_playback.hpp).
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
+_Maintained from librealsense `development`; last checked at commit [`e12faf3`](https://github.com/realsenseai/librealsense/commit/e12faf3cf8e19688f1ad2c832037c8a06f319429)._
 <!-- /wikigen:footer -->
