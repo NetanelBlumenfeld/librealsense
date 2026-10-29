@@ -92,7 +92,7 @@ Settings are class attributes in [`config.py`](https://github.com/realsenseai/li
 
 ## Running the web viewer
 
-The viewer needs Node.js and npm. It reaches the server through relative URLs: in the browser it uses the page origin as the backend origin ([`src/api/backend.ts`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/api/backend.ts)), calls REST routes under `/api/v1`, and connects Socket.IO on the path `/socket`.
+The viewer needs Node.js and npm. It takes the backend origin from [`src/api/backend.ts`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/api/backend.ts): the page origin in a browser, `http://localhost:8000` in the desktop app. It calls REST routes under `/api/v1` on that origin and connects Socket.IO on the path `/socket`.
 
 ### Development server
 
@@ -109,7 +109,7 @@ Open `http://localhost:3000`. The Vite dev server ([`vite.config.ts`](https://gi
 ### Production build
 
 ```bash
-npm run build      # tsc && vite build -> dist/
+npm run build      # tsc && vite build --logLevel warn -> dist/
 npm run preview    # serve dist/ on port 4173, same proxy to localhost:8000
 ```
 
@@ -126,9 +126,9 @@ npm run bundle     # copies dist/ to wrappers/rest-api/static/
 
 ### Viewer features
 
-The main screen ([`src/App.tsx`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/App.tsx)) has a device panel for selecting devices, streams and options, a stream view (video over WebRTC) and a 3D point cloud view. It also shows motion (gyro/accel) streams, now drawn as charts and an orientation view *(new in the next release)*, firmware update progress, server warnings from `/api/v1/health`, and an AI assistant panel.
+The main screen ([`src/App.tsx`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/App.tsx)) has a device panel for selecting devices, streams and options, a stream view (video over WebRTC) and a 3D point cloud view. It also shows motion (gyro/accel) streams as charts and an orientation view *(changed in the next release)*, firmware update progress, server warnings from `/api/v1/health`, and an AI assistant panel. In v2.59.1, motion streams were shown as X/Y/Z values with bars.
 
-The assistant calls an external LLM service directly from the browser. It is enabled by Vite environment variables in a `.env` file (see [`.env.example`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/.env.example)), read in [`src/api/chat.ts`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/api/chat.ts) in this order:
+The assistant panel calls external services directly from the browser. Its default mode, "RealSense AI Assistant", uses a hosted RealSense AI service and needs no key. A second mode, "Device Config Chatbot", calls an LLM provider. It is enabled by Vite environment variables in a `.env` file (see [`.env.example`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/.env.example)), read in [`src/api/chat.ts`](https://github.com/realsenseai/librealsense/blob/development/wrappers/rest-api/tools/react-viewer/src/api/chat.ts) in this order:
 
 | Variable | Provider |
 |---|---|
@@ -136,7 +136,7 @@ The assistant calls an external LLM service directly from the browser. It is ena
 | `VITE_OPENAI_API_KEY` | OpenAI (model `gpt-4o-mini`) |
 | `VITE_LLM_API_KEY` + `VITE_LLM_API_URL` (optional `VITE_LLM_MODEL`, default `gpt-4o-mini`) | Any OpenAI-compatible endpoint |
 
-Without any of these, the assistant reports that no chat API key is configured.
+Without any of these, or if the viewer's check request to the provider fails or returns an error status, the panel does not offer the chatbot mode; when no key is set, the viewer only logs `No chat API key configured. Set VITE_GROQ_API_KEY (free) or VITE_OPENAI_API_KEY` to the browser console.
 
 ### Desktop app
 
@@ -217,6 +217,7 @@ All routes below are prefixed with `/api/v1`. They are listed in the order the r
 Differences from v2.59.1 *(changed in the next release)*:
 
 - `.../sensors/{sensor_id}/start` takes `{"profiles": [...]}`. In v2.59.1 it took `config` or `configs` and returned a status object, and a `GET .../sensors/{sensor_id}/status` route existed; that route has been removed.
+- `supported_stream_profiles` in `GET .../sensors/` lists one entry per stream profile (`stream_type`, `stream_index`, `format`, `width`, `height`, `fps`, `default`). In v2.59.1 each entry grouped the `resolutions`, `fps` and `formats` lists of one stream type.
 - `.../stream/start` returns the stream status. In v2.59.1 it returned timing information and accepted a `reuse_cache` field.
 - The point cloud routes are `activate/` and `deactivate/` with a trailing slash. In v2.59.1 they had no trailing slash.
 
