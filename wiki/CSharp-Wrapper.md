@@ -41,7 +41,7 @@ The wrapper's [`CMakeLists.txt`](https://github.com/realsenseai/librealsense/blo
 
 ## First program
 
-This console program streams depth and prints the distance at the image centre. It is adapted from the [`depth`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/tutorial/depth/Program.cs) and [`pose`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/tutorial/pose/Program.cs) tutorials and uses only members defined in [`Pipeline.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Pipeline/Pipeline.cs), [`Config.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Pipeline/Config.cs), [`FrameSet.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Frames/FrameSet.cs) and [`DepthFrame.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Frames/DepthFrame.cs):
+This console program streams depth and prints the distance at the image centre. It is adapted from the [`depth`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/tutorial/depth/Program.cs) and [`pose`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/tutorial/pose/Program.cs) tutorials. Among others, it uses members defined in [`Pipeline.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Pipeline/Pipeline.cs), [`Config.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Pipeline/Config.cs), [`FrameSet.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Frames/FrameSet.cs) and [`DepthFrame.cs`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/Frames/DepthFrame.cs):
 
 ```cs
 using System;
@@ -120,7 +120,7 @@ All types are in the `Intel.RealSense` namespace, with base classes in `Intel.Re
 | `Frames` | `Frame`, `VideoFrame`, `DepthFrame`, `DisparityFrame`, `MotionFrame`, `PoseFrame`, `Points`, `FrameSet`, `FrameQueue`, `FramesReleaser` |
 | `Processing` | `ProcessingBlock`, `CustomProcessingBlock`, `Align`, `Colorizer`, `PointCloud`, `Syncer`, `DecimationFilter`, `SpatialFilter`, `TemporalFilter`, `HoleFillingFilter`, `ThresholdFilter`, `DisparityTransform`, `UnitsTransform`, `ZeroOrderInvalidationFilter` (see [[Post Processing Filters]]) |
 | `Options` | `IOption`, `IOptions`, `IOptionsContainer` |
-| `Types` | Structs such as `Intrinsics`, `Extrinsics`, `Pose`, `SoftwareVideoStream`, `SoftwareVideoFrame`; enums in `Types/Enums` such as `Stream`, `Format`, `Option`, `CameraInfo`, `Extension`, `FrameMetadataValue`, `Rs400VisualPreset`, `Matchers` |
+| `Types` | Data types such as `Intrinsics`, `Extrinsics`, `Pose`, `SoftwareVideoStream`, `SoftwareVideoFrame`; enums in `Types/Enums` such as `Stream`, `Format`, `Option`, `CameraInfo`, `Extension`, `FrameMetadataValue`, `Rs400VisualPreset`, `Matchers` |
 | `Helpers` | `Log` (`ToConsole`, `ToFile`, `LogMessage`), `ErrorMarshaler`, `ObjectPool`, `DisposableExtensions` (`DisposeWith`) |
 | `Base` | `Object`, `PooledObject`, `RefCountedPooledObject` (disposable wrappers around native handles) |
 
