@@ -4,7 +4,7 @@ Both integrations target Windows: CMake refuses `BUILD_UNITY_BINDINGS` on other 
 
 ## Unity: setting up the project
 
-The Unity project depends on the .NET wrapper (`Intel.RealSense.dll`, see [[CSharp Wrapper]]) and the native library (`realsense2.dll`). Unity scripts load both from `Assets/RealSenseSDK2.0/Plugins/`. That folder is not in the repository (it is listed in [`wrappers/unity/.gitignore`](https://github.com/realsenseai/librealsense/blob/development/wrappers/unity/.gitignore)), so you have to put the two DLLs there yourself or let the CMake build do it.
+The Unity project depends on the .NET wrapper (`Intel.RealSense.dll`, see [[CSharp Wrapper]]) and the native library (`realsense2.dll`, loaded by the wrapper through `DllImport`). Both are expected in `Assets/RealSenseSDK2.0/Plugins/`. That folder is not in the repository (it is listed in [`wrappers/unity/.gitignore`](https://github.com/realsenseai/librealsense/blob/development/wrappers/unity/.gitignore)), so you have to put the two DLLs there yourself or let the CMake build do it.
 
 ### Option A: build the DLLs with CMake
 
@@ -22,7 +22,7 @@ cd build
 cmake .. -DBUILD_UNITY_BINDINGS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_GENERATOR_PLATFORM=x64
 ```
 
-Open the generated `realsense2.sln` in Visual Studio and build the `Intel.RealSense` project (in the `Wrappers/csharp` solution folder). It depends on `realsense2`, so both libraries get built. The Unity-specific steps live in [`wrappers/csharp/Intel.RealSense/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/CMakeLists.txt):
+Open the generated `realsense2.sln` in Visual Studio and build the `Intel.RealSense` project (in the `Wrappers/csharp` solution folder) in the Release configuration. A Debug build names the native library `realsense2d.dll`, and the copy step below does not pick that file up. `Intel.RealSense` depends on `realsense2`, so both libraries get built. The Unity-specific steps live in [`wrappers/csharp/Intel.RealSense/CMakeLists.txt`](https://github.com/realsenseai/librealsense/blob/development/wrappers/csharp/Intel.RealSense/CMakeLists.txt):
 
 | Step | What happens |
 |---|---|
@@ -32,7 +32,7 @@ Open the generated `realsense2.sln` in Visual Studio and build the `Intel.RealSe
 
 CMake finds Unity with `find_program(UNITY_PATH Unity\\Editor\\Unity.exe)`. To use a specific editor, pass `-DUNITY_PATH=<path to>\Unity.exe`. If CMake does not find Unity, it prints the warning `Couldn't locate Unity.exe` and skips the package step. The DLLs are still copied.
 
-The link target is computed from the `Intel.RealSense` project's source directory. After configuring, check that `<build>\wrappers\unity` really contains the Unity project (an `Assets` folder). If it does not, use Option B and copy the DLLs by hand.
+The link target is computed from the `Intel.RealSense` project's source directory, so it points to `wrappers\csharp\Intel.RealSense\wrappers\unity` in the source tree. That folder is not in the repository, so `<build>\wrappers\unity` does not contain the Unity project. Use Option B and copy the DLLs by hand.
 
 The .NET target framework of `Intel.RealSense` is `v${DOTNET_VERSION_LIBRARY}`. On Windows that variable is a cache entry that defaults to `3.5`, described in [`CMake/windows_config.cmake`](https://github.com/realsenseai/librealsense/blob/development/CMake/windows_config.cmake) as ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5".
 
@@ -63,7 +63,7 @@ All scenes are in [`Assets/RealSenseSDK2.0/Scenes`](https://github.com/realsense
 | `StartHere.unity` | Menu that opens all of the samples below. |
 | `Samples/TexturesDepthAndInfrared.unity` | 2D scene that binds depth and infrared streams to textures. |
 | `Samples/TexturesDepthAndColor.unity` | 2D scene that binds depth and color streams to textures. Needs a camera with an RGB sensor. |
-| `Samples/BackgroundSegmentation.unity` | Color with background segmentation (uses `RsARBackgroundRenderer`, `RsProcessingPipe` and the `BGSeg` shader/material). |
+| `Samples/BackgroundSegmentation.unity` | Color with background segmentation (uses an `RsProcessingPipe` with profile `ProcessingPipe/BackgroundSegmentation.asset`, and the `BGSeg` and `Grayscale` shaders/materials). |
 | `Samples/AlignmentSample.unity` | Alignment through an `RsProcessingPipe` (profile `ProcessingPipe/AlignmentSample.asset`). |
 | `Samples/PointCloudProcessingBlocks.unity` | 3D point cloud with a processing-block chain whose blocks can be toggled at run time (profile `ProcessingPipe/PointCloudProcessingBlocks.asset`). |
 | `Samples/PointCloudDepthAndColor.unity` | 3D point cloud textured with the color stream (profile `ProcessingPipe/PointCloudDepthAndColor.asset`). |
@@ -129,14 +129,14 @@ The blocks in [`Scripts/ProcessingBlocks`](https://github.com/realsenseai/librea
 | Unity block | Wraps | Fields with defaults (from the script) |
 |---|---|---|
 | `RsDecimationFilter` | `DecimationFilter` | `_filterMagnitude = 2` |
-| `RsThresholdFilter` | `ThresholdFilter` | `MaxDistance = 4` |
-| `RsDisparityTransform` | `DisparityTransform` | `DisparityMode` enum |
-| `RsSpatialFilter` | `SpatialFilter` | `_filterMagnitude = 2`, `_filterSmoothDelta = 20`, `_holeFillingMode` |
-| `RsTemporalFilter` | `TemporalFilter` | `_filterSmoothDelta = 20`, `_temporalPersistence = 3` |
-| `RsHoleFillingFilter` | `HoleFillingFilter` | `HoleFillingMode` enum |
+| `RsThresholdFilter` | `ThresholdFilter` | `MinDistance = 0.1`, `MaxDistance = 4` |
+| `RsDisparityTransform` | `DisparityTransform` | `Mode = DisparityMode.DepthToDisparity` |
+| `RsSpatialFilter` | `SpatialFilter` | `_filterMagnitude = 2`, `_filterSmoothAlpha = 0.5`, `_filterSmoothDelta = 20`, `_holeFillingMode = 0` (`HoleFillingMode.Disabled`) |
+| `RsTemporalFilter` | `TemporalFilter` | `_filterSmoothAlpha = 0.4`, `_filterSmoothDelta = 20`, `_temporalPersistence = 3` |
+| `RsHoleFillingFilter` | `HoleFillingFilter` | `_holesFill = HoleFillingMode.FillFromLeft` |
 | `RsColorizer` | `Colorizer` | `histogramEqualization = true`, `minDist = 0`, `maxDist = 6` |
 | `RsAlign` | `Align` | `_alignTo = Stream.Depth` |
-| `RsPointCloud` | `PointCloud` | `OcclusionRemoval` enum |
+| `RsPointCloud` | `PointCloud` | `TextureStream = Stream.Color`, `TextureFormat = Format.Any`, `_occlusionRemoval = OcclusionRemoval.Off` |
 | `DepthCutoff` | custom block | `Distance = 1000` |
 
 Every block derives from `RsProcessingBlock`, which has an `enabled` flag (default `true`). For what each filter does, see [[Post Processing Filters]].
@@ -229,9 +229,9 @@ All of these are in [`Plugins/RealSense/Source/RealSense/Public`](https://github
 |---|---|---|
 | `URealSenseContext` | `GetRealSense()` (static), `QueryDevices()`, `GetDeviceById(int)`, `FindDeviceBySerial(FString)` | `Devices` |
 | `URealSenseDevice` | `GetSensor(ERealSenseStreamType)`, `GetStreamProfiles(ERealSenseStreamType)`, `SupportsProfile(FRealSenseStreamProfile)`, `LoadPreset(FileName)`, `SavePreset(FileName)` | `Sensors`, plus name and serial |
-| `URealSenseSensor` | `SupportsOption(ERealSenseOptionType)`, `SupportsProfile(FRealSenseStreamProfile)`, `GetOption(ERealSenseOptionType)` | `Options` |
+| `URealSenseSensor` | `SupportsOption(ERealSenseOptionType)`, `SupportsProfile(FRealSenseStreamProfile)`, `GetOption(ERealSenseOptionType)` | `Options`, `StreamProfiles`, plus name |
 | `URealSenseOption` | `QueryValue()`, `SetValue(float)` | option type, name, description, range |
-| `ARealSenseInspector` (actor) | `Start()`, `Stop()`, `SetPointCloudMaterial(int SectionId, UMaterialInterface*)` | `Context`, `ActiveDevice`, the textures, `PclMesh`, `PclMaterial` |
+| `ARealSenseInspector` (actor) | `Start()`, `Stop()`, `SetPointCloudMaterial(int SectionId, UMaterialInterface*)` | `Context`, `ActiveDevice`, `DepthScale`, the textures, `PclMesh`, `PclMaterial` |
 
 `LoadPreset` and `SavePreset` read and write JSON presets through `rs2_load_json` and `rs2_serialize_json` (see [[D400 Series Visual Presets]] and [[D400 Advanced Mode]]). The types in `RealSenseTypes.h` include:
 
@@ -259,7 +259,7 @@ These are editable in the Details panel and from Blueprints. Defaults are taken 
 | ColorStream | `ColorConfig`, `bEnableColor` | 640 x 480 @ 30, `true` | Color is requested as `RGBA8` and output as `ColorTexture`. |
 | InfraredStream | `InfraredConfig`, `bEnableInfrared` | 640 x 480 @ 30, `true` | Infrared is requested as `Y8` and output as `InfraredTexture`. |
 | PointCloud | `bEnablePcl` | `false` | Builds the point cloud into `PclMesh` (a `URuntimeMeshComponent`). |
-| PointCloud | `PclScale`, `PclVoxelSize`, `PclDensity`, `PclRenderRate` | `1.0`, `1.0`, `0.2`, `5` | Cloud scale, point size, fraction of points drawn, mesh update rate. |
+| PointCloud | `PclScale`, `PclVoxelSize`, `PclDensity`, `PclRenderRate` | `1.0`, `1.0`, `0.2`, `5` | Cloud scale, point size, fraction of points drawn, time in seconds between mesh updates. |
 
 The plugin also adds a details-panel customization ([`RealSenseDetailCustomization.cpp`](https://github.com/realsenseai/librealsense/blob/development/wrappers/unrealengine4/Plugins/RealSense/Source/RealSense/Private/RealSenseDetailCustomization.cpp)) that acts as a hardware inspector. It has a *Refresh* button, shows each device's serial number, has *Load preset* and *Save preset* buttons (file filter `*.json`), and lists the sensor options.
 
@@ -298,12 +298,14 @@ for (auto Device : Context->Devices)
 ### Unreal Engine 4
 
 - The plugin is labelled "alpha" and whitelisted for `Win64` only. The SDK path in `RealSense.Build.cs` is hard-coded.
-- The `ARealSenseInspector` constructor calls `GetDeviceDefaultProfileConfig()`, which overwrites `DepthConfig`, `ColorConfig` and `InfraredConfig` with the last profile the device reports for each stream. If depth and color then differ in size, it sets `bAlignDepthToColor` to `false`.
-- Stream modes are read in `Start()`. Calling `Start()` while already running fails with "Already started", so call `Stop()` first to change a video mode.
+- The `ARealSenseInspector` constructor calls `GetDeviceDefaultProfileConfig()`, which overwrites `DepthConfig`, `ColorConfig` and `InfraredConfig` with the last profile that the device at index 0 of the context's device list reports for each stream (it ignores `DeviceSerial`). If depth and color then differ in size, it sets `bAlignDepthToColor` to `false`.
+- Stream modes are read in `Start()`. Calling `Start()` while already running makes the plugin log `ARealSenseInspector::Start exception: Already started`, stop the running pipeline and return `false`. To change a video mode, call `Stop()` and then `Start()`.
 - The repository guide says depth and infrared should use the same video mode when both are running.
 - The repository guide lists these known issues:
   - point-cloud support is experimental;
+  - high CPU usage;
   - colorized depth is CPU-bound and should be avoided at high resolutions and frame rates;
+  - point-cloud update and rendering can be slow;
   - there can be frame drops or timeouts at high resolutions;
   - point-cloud edges can show texture corruption;
   - rebuilding project files can fail after switching engine versions (cleaning the solution or deleting the `Intermediate` directory fixes it).
