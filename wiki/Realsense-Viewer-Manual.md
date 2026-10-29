@@ -511,5 +511,5 @@ Distances and areas are shown as floating labels and connecting rulers; distance
 | **Z** (in the Measurement Tool) | Undo the last measurement change. |
 
 <!-- wikigen:footer -->
-_Maintained from librealsense `development`; last checked at commit [`bc496cd`](https://github.com/realsenseai/librealsense/commit/bc496cdb16beca36c41d2b96170e309fceb38d6e)._
+_Maintained from librealsense `development`; last checked at commit [`46cf1a6`](https://github.com/realsenseai/librealsense/commit/46cf1a67cc441ad9f55ce339a0de30f2a1c6fed0)._
 <!-- /wikigen:footer -->

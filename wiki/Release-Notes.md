@@ -1,3 +1,115 @@
+<!-- wikigen:upcoming -->
+## Upcoming release (draft)
+
+### Highlights
+
+- **Passive depth** - D585 2C passive depth mode (`RS2_OPTION_PASSIVE_DEPTH_MODE`: disabled, alternating or full passive), on USB and GMSL.
+- **Dual RGB** - RGB-specific auto-exposure, exposure and gain options on D585 2C, dual-color AE mode and rectification on GMSL, and D401 dual RGB over USB.
+- **Depth mapping on D5x5** - get and set the occupancy grid and labeled point cloud parameters as JSON, standalone 2C/3C occupancy on D585 GMSL, occupancy grid origin metadata, and a device point cloud view in the Viewer.
+- **JPEG on D500** - JPEG support for D500 devices, with a new MJPEG decoder processing block.
+- **IMU** - accelerometer sensitivity option (`RS2_OPTION_ACCEL_SENSITIVITY`) and gyro in fixed physical units on D500 GMSL; D555 DDS IMU axes aligned with USB.
+- **Web viewer and REST API** - theme rework and IMU history graphs, real SDK stream profiles, `--host` and `--port` server arguments, and the backend no longer needs OpenCV.
+- **Jetson** - support for JetPack 6.2.3 (L4T 36.5.2).
+
+### API
+
+See [[API Changes]].
+
+### Improvements and fixes
+
+- Limit improved close range on unsupported profiles ([#15875](https://github.com/realsenseai/librealsense/pull/15875))
+- Fix advanced-mode JSON float parsing under comma-decimal locales ([#15865](https://github.com/realsenseai/librealsense/pull/15865))
+- Fix the cached depth scale after advanced table writes ([#15879](https://github.com/realsenseai/librealsense/pull/15879))
+- D5x5: add `depth_mapping_params` to the depth mapping example JSON ([#15877](https://github.com/realsenseai/librealsense/pull/15877))
+- Viewer: Detection Distance as Off / Host / On-Camera ([#15857](https://github.com/realsenseai/librealsense/pull/15857))
+- Support for Jetson JetPack 6.2.3 (L4T 36.5.2) ([#15873](https://github.com/realsenseai/librealsense/pull/15873))
+- Skip GMSL depth mapping segmentation options the driver does not expose ([#15870](https://github.com/realsenseai/librealsense/pull/15870))
+- D585 GMSL: support standalone 2C/3C occupancy ([#15780](https://github.com/realsenseai/librealsense/pull/15780))
+- Fix slow sensor close: the dispatcher now wakes sleeping pollers on stop ([#15853](https://github.com/realsenseai/librealsense/pull/15853))
+- Security: fix critical and high vulnerabilities found by an automated scan ([#15855](https://github.com/realsenseai/librealsense/pull/15855), [#15745](https://github.com/realsenseai/librealsense/pull/15745), [#15715](https://github.com/realsenseai/librealsense/pull/15715))
+- Linux V4L2: stop video before metadata on UVC devices ([#15776](https://github.com/realsenseai/librealsense/pull/15776))
+- Start the MIPI video/metadata syncer before the capture thread ([#15866](https://github.com/realsenseai/librealsense/pull/15866))
+- D401 dual RGB over USB ([#15835](https://github.com/realsenseai/librealsense/pull/15835))
+- Windows: keep Media Foundation media types on a pin with no native USB format ([#15859](https://github.com/realsenseai/librealsense/pull/15859))
+- Fix USB video/metadata pairing when V4L2 nodes are interleaved ([#15819](https://github.com/realsenseai/librealsense/pull/15819))
+- Viewer: the left control pane can be resized by dragging its edge ([#15851](https://github.com/realsenseai/librealsense/pull/15851))
+- Expose the D585 2C passive depth mode on GMSL ([#15856](https://github.com/realsenseai/librealsense/pull/15856))
+- Fix aligned depth intrinsics on dual-RGB D500 cameras ([#15852](https://github.com/realsenseai/librealsense/pull/15852))
+- Block the dual-RGB mode switch on D535F and D585F ([#15849](https://github.com/realsenseai/librealsense/pull/15849))
+- Stop installing the Viewer sample preset into the user's home folder ([#15825](https://github.com/realsenseai/librealsense/pull/15825))
+- Fix a pyrealsense2 crash on import in Linux shared builds ([#15848](https://github.com/realsenseai/librealsense/pull/15848))
+- D585 2C USB: calculate active and passive FPS separately in alternating passive depth ([#15842](https://github.com/realsenseai/librealsense/pull/15842))
+- D5x5: get and set depth mapping params ([#15782](https://github.com/realsenseai/librealsense/pull/15782))
+- D500 USB: derive Y8 IR from Y8I, drop GREY/UYVY IR passthrough ([#15847](https://github.com/realsenseai/librealsense/pull/15847))
+- Allow embedded DPP filters to run with object detection ([#15839](https://github.com/realsenseai/librealsense/pull/15839))
+- Enable firmware error polling on D400 GMSL ([#15823](https://github.com/realsenseai/librealsense/pull/15823))
+- D585 GMSL: enable the dual-RGB rectification option ([#15838](https://github.com/realsenseai/librealsense/pull/15838))
+- D500 GMSL: get and set the whole DPP struct, keep static ranges ([#15832](https://github.com/realsenseai/librealsense/pull/15832))
+- Viewer: don't draw object detections on Color 2 ([#15833](https://github.com/realsenseai/librealsense/pull/15833))
+- Keep frame callbacks alive while they are being invoked ([#15809](https://github.com/realsenseai/librealsense/pull/15809))
+- D5xx device point cloud and an improved Viewer on the depth mapping sensor ([#15775](https://github.com/realsenseai/librealsense/pull/15775))
+- Give each multiplexed color stream its own frame pool ([#15820](https://github.com/realsenseai/librealsense/pull/15820))
+- MIPI firmware update with several cameras: match the update device to its camera ([#15703](https://github.com/realsenseai/librealsense/pull/15703))
+- Add JPEG support to D500 ([#15796](https://github.com/realsenseai/librealsense/pull/15796))
+- REST API: add `--host` and `--port` to the server ([#15806](https://github.com/realsenseai/librealsense/pull/15806))
+- rs-fw-update: fix a crash on exit when a device event arrives after the update ([#15810](https://github.com/realsenseai/librealsense/pull/15810))
+- Viewer: fix asynchronous object detection overlays ([#15800](https://github.com/realsenseai/librealsense/pull/15800))
+- Linux: share one EasyLogging++ storage to fix a double destroy at exit ([#15799](https://github.com/realsenseai/librealsense/pull/15799))
+- Fix D436 gyro sensitivity on macOS ([#15802](https://github.com/realsenseai/librealsense/pull/15802))
+- Hide Master from the D585 GMSL inter-camera sync mode ([#15803](https://github.com/realsenseai/librealsense/pull/15803))
+- REST API and web viewer: use real SDK stream profiles ([#15766](https://github.com/realsenseai/librealsense/pull/15766))
+- D585 GMSL: fix RGB8 1280x960@60 frame drops with CUDA zero-copy ([#15797](https://github.com/realsenseai/librealsense/pull/15797))
+- MIPI firmware update: one write path for operational and recovery devices ([#15674](https://github.com/realsenseai/librealsense/pull/15674))
+- D500 GMSL: report gyro in fixed physical units ([#15794](https://github.com/realsenseai/librealsense/pull/15794))
+- Enable the aligned depth option on D585 GMSL ([#15787](https://github.com/realsenseai/librealsense/pull/15787))
+- Web viewer desktop (Tauri) app: connect to the bundled local backend, so the connection badge no longer always shows Disconnected ([#15767](https://github.com/realsenseai/librealsense/pull/15767))
+- Allow Emitter Enabled and Laser Power while HDR is active ([#15792](https://github.com/realsenseai/librealsense/pull/15792))
+- D555 DDS: align IMU axes with USB ([#15781](https://github.com/realsenseai/librealsense/pull/15781))
+- Linux V4L2 backend: fix an unlock fd leak, the metadata fd sentinel and a metadata size wrap ([#15764](https://github.com/realsenseai/librealsense/pull/15764))
+- D500 GMSL: set the minimum firmware for the int32 IMU path ([#15778](https://github.com/realsenseai/librealsense/pull/15778))
+- Multiplex perception streams on GMSL ([#15759](https://github.com/realsenseai/librealsense/pull/15759))
+- D500 GMSL: expose the accelerometer sensitivity option ([#15748](https://github.com/realsenseai/librealsense/pull/15748))
+- Dual-color auto-exposure mode on GMSL ([#15772](https://github.com/realsenseai/librealsense/pull/15772))
+- Viewer: BETA badge on perception streams ([#15762](https://github.com/realsenseai/librealsense/pull/15762))
+- D585 GMSL: select the int32 physical-unit IMU path ([#15747](https://github.com/realsenseai/librealsense/pull/15747))
+- Viewer: composite-option editors use the standard option look ([#15754](https://github.com/realsenseai/librealsense/pull/15754))
+- D585 2C: add RGB-specific auto-exposure, exposure and gain options ([#15750](https://github.com/realsenseai/librealsense/pull/15750))
+- Temporal filter resets on a geometry change ([#15763](https://github.com/realsenseai/librealsense/pull/15763))
+- Viewer: one-time AI Assistant disclaimer ([#15749](https://github.com/realsenseai/librealsense/pull/15749))
+- Pipeline: open D5xx mapping streams after depth ([#15755](https://github.com/realsenseai/librealsense/pull/15755))
+- Fix on-chip calibration failing to restart streaming at an unsupported resolution ([#15758](https://github.com/realsenseai/librealsense/pull/15758))
+- REST API: drop OpenCV from the backend ([#15753](https://github.com/realsenseai/librealsense/pull/15753))
+- D500 tare calibration supports a custom preset ([#15751](https://github.com/realsenseai/librealsense/pull/15751))
+- Viewer: fix slowness with passive depth ([#15742](https://github.com/realsenseai/librealsense/pull/15742))
+- REST API: drop the pipeline start cache, reuse the device and stop synchronously ([#15743](https://github.com/realsenseai/librealsense/pull/15743))
+- Web viewer: theme rework and IMU history graphs ([#15559](https://github.com/realsenseai/librealsense/pull/15559))
+- Fix the libcurl build with the Ninja generator and system libidn2 ([#15632](https://github.com/realsenseai/librealsense/pull/15632))
+- Viewer: fix a frame-pool error flood when drawing is slow ([#15738](https://github.com/realsenseai/librealsense/pull/15738))
+- D585S: keep the hardware-monitor inter-camera sync mode ([#15740](https://github.com/realsenseai/librealsense/pull/15740))
+- D585 2C GMSL: demultiplex Color 1 / Color 2 by metadata source index ([#15734](https://github.com/realsenseai/librealsense/pull/15734))
+- Viewer: exclude the object detection stream from the frame drops dashboard ([#15741](https://github.com/realsenseai/librealsense/pull/15741))
+- Dual color can stream color at 60 FPS in full passive mode ([#15736](https://github.com/realsenseai/librealsense/pull/15736))
+- Enable AVX2 YUY2 to RGB/BGR unpacking ([#15730](https://github.com/realsenseai/librealsense/pull/15730))
+- Clear the open profiles list when a DDS device goes offline ([#15735](https://github.com/realsenseai/librealsense/pull/15735))
+- Reduce and cap the size of the usage statistics (RUM) report ([#15732](https://github.com/realsenseai/librealsense/pull/15732))
+- Register extrinsics for motion frames, not only video ([#15728](https://github.com/realsenseai/librealsense/pull/15728))
+- Fix the build with GCC 13 ([#15683](https://github.com/realsenseai/librealsense/pull/15683))
+- Fix the build on Windows ARM and other non-x86 targets besides Linux, macOS and Android ([#15684](https://github.com/realsenseai/librealsense/pull/15684))
+- REST API: speed up streaming on Debug SDK builds ([#15725](https://github.com/realsenseai/librealsense/pull/15725))
+- Viewer: rendering no longer blocks IMU capture ([#15692](https://github.com/realsenseai/librealsense/pull/15692))
+- DDS: skip the fixed frame-size check for compressed encodings ([#15718](https://github.com/realsenseai/librealsense/pull/15718))
+- Viewer: fix the occupancy grid axes ([#15716](https://github.com/realsenseai/librealsense/pull/15716))
+- D401 GMSL: fix an rs-capture crash by default-tagging only Color 0 ([#15710](https://github.com/realsenseai/librealsense/pull/15710))
+- D500: enable close range, decimation and temporal composite options on GMSL ([#15687](https://github.com/realsenseai/librealsense/pull/15687))
+- Viewer: tooltips on post-processing filter controls ([#15673](https://github.com/realsenseai/librealsense/pull/15673))
+- Viewer: enforce IR/color pairing when embedded decimation is on ([#15704](https://github.com/realsenseai/librealsense/pull/15704))
+- Passive depth ([#15702](https://github.com/realsenseai/librealsense/pull/15702))
+- Expose D500 occupancy grid origin metadata ([#15691](https://github.com/realsenseai/librealsense/pull/15691))
+- Restore mapping timing metadata and Viewer FPS ([#15667](https://github.com/realsenseai/librealsense/pull/15667))
+- Protect the point cloud intrinsics query ([#15700](https://github.com/realsenseai/librealsense/pull/15700))
+- Viewer: draw object detections on one stream only ([#15670](https://github.com/realsenseai/librealsense/pull/15670))
+<!-- /wikigen:upcoming -->
+
 ## Release 2.59.1 beta
 
 Release Date: Oct 11, 2026
