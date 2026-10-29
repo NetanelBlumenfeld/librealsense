@@ -17,6 +17,7 @@ See [[API Changes]].
 
 ### Improvements and fixes
 
+- Dual-RGB D500: stream depth and color at different resolutions; both color streams share one resolution, and all streams share one frame rate ([#15878](https://github.com/realsenseai/librealsense/pull/15878))
 - Limit improved close range on unsupported profiles ([#15875](https://github.com/realsenseai/librealsense/pull/15875))
 - Fix advanced-mode JSON float parsing under comma-decimal locales ([#15865](https://github.com/realsenseai/librealsense/pull/15865))
 - Fix the cached depth scale after advanced table writes ([#15879](https://github.com/realsenseai/librealsense/pull/15879))
